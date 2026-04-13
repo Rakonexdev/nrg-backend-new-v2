@@ -1,0 +1,1 @@
+import{T as e,s as t,u as n}from"./runtime-core.esm-bundler-CvOY52NR.js";import{t as r}from"./_plugin-vue_export-helper-B67ILkmu.js";var i={},a={class:`invoices`};function o(r,i){return e(),n(`div`,a,[...i[0]||=[t(`h1`,null,`Invoices`,-1)]])}var s=r(i,[[`render`,o]]);export{s as default};

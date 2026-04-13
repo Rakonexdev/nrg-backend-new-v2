@@ -1,0 +1,1 @@
+import{K as e}from"./runtime-core.esm-bundler-CvOY52NR.js";import{n as t}from"./pinia-B5bDCQ5V.js";var n=t(`notification`,()=>{let t=e([]),n=(e,n=`success`,i=3e3)=>{let a=Date.now();t.value.push({id:a,message:e,type:n}),setTimeout(()=>{r(a)},i)},r=e=>{t.value=t.value.filter(t=>t.id!==e)};return{notifications:t,addNotification:n,removeNotification:r}});export{n as t};

@@ -1,0 +1,53 @@
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\StaffController;
+use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\ContractController;
+use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\CollectionController;
+use App\Http\Controllers\Api\SettlementController;
+use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\ExpenseCategoryController;
+use App\Http\Controllers\Api\DashboardController;
+
+// Public Auth routes
+Route::post('/auth/login', [AuthController::class, 'login']);
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth Base
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    
+    // Core Entities
+    Route::get('/dashboard', [\App\Http\Controllers\Api\DashboardController::class, 'index']);
+    Route::apiResource('staff', StaffController::class);
+    Route::apiResource('companies', CompanyController::class);
+    Route::apiResource('contracts', ContractController::class);
+    Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show', 'update']);
+
+    // Staff Docs
+    Route::get('/staff/{id}/documents', [DocumentController::class, 'index']);
+    Route::post('/staff/{id}/documents', [DocumentController::class, 'store']);
+
+    // Financials
+    Route::get('/collections/unsettled', [CollectionController::class, 'unsettled']);
+    Route::get('/collections', [CollectionController::class, 'index']);
+    Route::post('/collections', [CollectionController::class, 'store']); // Create Collection
+
+    Route::get('/settlements', [SettlementController::class, 'index']);
+    Route::post('/settlements', [SettlementController::class, 'store']);
+    Route::put('/settlements/{id}/confirm', [SettlementController::class, 'confirm']);
+
+    Route::apiResource('expenses', ExpenseController::class);
+    Route::apiResource('expense-categories', ExpenseCategoryController::class);
+
+    // Dashboard
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+    Route::get('/dashboard/income-expense', [DashboardController::class, 'incomeExpense']);
+});
