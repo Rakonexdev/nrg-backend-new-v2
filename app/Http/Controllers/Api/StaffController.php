@@ -33,6 +33,27 @@ class StaffController extends Controller
             $query->orderBy($sortColumn, $sortDirection);
         }
 
+        // Expiry filters
+        if ($request->has('filter')) {
+            $now = \Carbon\Carbon::now();
+            $thirtyDays = \Carbon\Carbon::now()->addDays(30);
+            
+            switch($request->get('filter')) {
+                case 'expiring_qid':
+                    $query->whereBetween('qid_expiry', [$now, $thirtyDays]);
+                    break;
+                case 'expired_qid':
+                    $query->where('qid_expiry', '<', $now);
+                    break;
+                case 'expiring_passport':
+                    $query->whereBetween('passport_expiry', [$now, $thirtyDays]);
+                    break;
+                case 'expired_passport':
+                    $query->where('passport_expiry', '<', $now);
+                    break;
+            }
+        }
+
         // Status filter
         if ($request->has('status')) {
             $query->where('status', $request->get('status'));
