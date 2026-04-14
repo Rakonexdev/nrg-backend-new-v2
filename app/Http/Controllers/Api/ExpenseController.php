@@ -6,40 +6,110 @@ use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Expense::with('category')->paginate(15);
+        $query = Expense::with(['category', 'subcategory', 'recorder']);
+
+        if ($request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->date) {
+            $query->whereDate('expense_date', $request->date);
+        }
+
+        if ($request->search) {
+            $query->where(function($q) use ($request) {
+                $q->where('vendor_name', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhereHas('category', function($cq) use ($request) {
+                      $cq->where('name', 'like', "%{$request->search}%");
+                  })
+                  ->orWhereHas('subcategory', function($sq) use ($request) {
+                      $sq->where('name', 'like', "%{$request->search}%");
+                  });
+            });
+        }
+
+        return $query->orderBy('expense_date', 'desc')->paginate(15);
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'expense_date' => 'required|date',
-            'category_id' => 'required|exists:expense_categories,id',
-            'amount' => 'required|numeric',
-            'description' => 'nullable|string'
-        ]);
-        
-        $data['recorded_by'] = $request->user()->id;
-        
-        return Expense::create($data);
+        try {
+            $data = $request->validate([
+                'expense_date' => 'required|date',
+                'category_id' => 'required|exists:expense_categories,id',
+                'subcategory_id' => 'nullable|exists:expense_categories,id',
+                'amount' => 'required|numeric',
+                'payment_method' => 'required|string',
+                'vendor_name' => 'nullable|string',
+                'description' => 'nullable|string',
+                'company_id' => 'nullable|exists:companies,id',
+                'staff_id' => 'nullable|exists:staff,id',
+            ]);
+            
+            $data['recorded_by'] = $request->user()?->id;
+            
+            if (!$data['recorded_by']) {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+            
+            $expense = Expense::create($data);
+            return $expense->load(['category', 'subcategory']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Expense creation failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to create expense: ' . $e->getMessage()], 500);
+        }
     }
 
     public function show($id)
     {
-        return Expense::with('category')->findOrFail($id);
+        return Expense::with(['category', 'subcategory', 'recorder'])->findOrFail($id);
     }
 
     public function update(Request $request, $id)
     {
-        $expense = Expense::findOrFail($id);
-        $expense->update($request->all());
-        return $expense;
+        try {
+            $expense = Expense::findOrFail($id);
+            $data = $request->validate([
+                'expense_date' => 'sometimes|required|date',
+                'category_id' => 'sometimes|required|exists:expense_categories,id',
+                'subcategory_id' => 'nullable|exists:expense_categories,id',
+                'amount' => 'sometimes|required|numeric',
+                'payment_method' => 'sometimes|required|string',
+                'vendor_name' => 'nullable|string',
+                'description' => 'nullable|string',
+                'company_id' => 'nullable|exists:companies,id',
+                'staff_id' => 'nullable|exists:staff,id',
+            ]);
+            
+            $expense->update($data);
+            return $expense->load(['category', 'subcategory']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Update failed: ' . $e->getMessage()], 500);
+        }
     }
 
     public function destroy($id)
     {
-        Expense::findOrFail($id)->delete();
-        return response()->json(['message' => 'Deleted']);
+        try {
+            $expense = Expense::findOrFail($id);
+            $expense->delete();
+            return response()->json(['message' => 'Expense deleted successfully']);
+        } catch (\Exception $e) {
+            \Log::error('Expense deletion failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to delete: ' . $e->getMessage()], 500);
+        }
     }
 }

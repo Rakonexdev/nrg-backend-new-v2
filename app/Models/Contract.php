@@ -6,14 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 class Contract extends Model
 {
     protected $fillable = [
-        'staff_id', 'company_id', 'joining_date', 'contract_start', 
-        'contract_end', 'monthly_salary', 'status'
+        'staff_id', 'company_id', 'start_date', 'end_date', 
+        'contract_value', 'payment_type'
     ];
 
     protected $casts = [
-        'joining_date' => 'date',
-        'contract_start' => 'date',
-        'contract_end' => 'date',
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'contract_value' => 'decimal:2',
     ];
 
     public function staff() {

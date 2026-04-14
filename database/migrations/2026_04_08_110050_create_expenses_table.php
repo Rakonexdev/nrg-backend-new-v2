@@ -8,9 +8,12 @@ return new class extends Migration {
             $table->id();
             $table->date('expense_date');
             $table->foreignId('category_id')->constrained('expense_categories');
+            $table->foreignId('subcategory_id')->nullable()->constrained('expense_categories');
             $table->foreignId('staff_id')->nullable()->constrained('staff');
             $table->foreignId('company_id')->nullable()->constrained('companies');
             $table->decimal('amount', 10, 2);
+            $table->string('payment_method')->default('Cash');
+            $table->string('vendor_name')->nullable();
             $table->text('description')->nullable();
             $table->foreignId('recorded_by')->constrained('users');
             $table->timestamps();

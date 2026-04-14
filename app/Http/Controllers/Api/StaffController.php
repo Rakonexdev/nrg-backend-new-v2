@@ -33,6 +33,11 @@ class StaffController extends Controller
             $query->orderBy($sortColumn, $sortDirection);
         }
 
+        // Status filter
+        if ($request->has('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
         // Pagination
         $perPage = $request->get('per_page', 15);
         return StaffResource::collection($query->paginate($perPage));

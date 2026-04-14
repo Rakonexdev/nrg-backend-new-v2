@@ -31,6 +31,11 @@ class CompanyController extends Controller
             $query->orderBy($sortColumn, $sortDirection);
         }
 
+        // Active filter
+        if ($request->has('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
         // Pagination
         $perPage = $request->get('per_page', 15);
         return CompanyResource::collection($query->paginate($perPage));

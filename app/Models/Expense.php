@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 class Expense extends Model
 {
     protected $fillable = [
-        'expense_date', 'category_id', 'staff_id', 'company_id', 
-        'amount', 'description', 'recorded_by'
+        'expense_date', 'category_id', 'subcategory_id', 'staff_id', 'company_id', 
+        'amount', 'payment_method', 'vendor_name', 'description', 'recorded_by'
     ];
 
     protected $casts = [
@@ -16,6 +16,10 @@ class Expense extends Model
 
     public function category() {
         return $this->belongsTo(ExpenseCategory::class, 'category_id');
+    }
+
+    public function subcategory() {
+        return $this->belongsTo(ExpenseCategory::class, 'subcategory_id');
     }
 
     public function staff() {
