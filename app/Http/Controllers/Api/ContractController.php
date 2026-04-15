@@ -12,19 +12,34 @@ class ContractController extends Controller
     {
         $query = Contract::with(['staff', 'company']);
         
-        if ($request->search) {
-            $query->whereHas('staff', function($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%");
-            })->orWhereHas('company', function($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%");
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->whereHas('staff', function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                })->orWhereHas('company', function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                });
             });
         }
 
-        if ($request->payment_status) {
-            $query->where('payment_status', $request->payment_status);
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->get('payment_status'));
         }
 
-        return ContractResource::collection($query->latest()->paginate(15));
+        $sortColumn = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_direction', 'desc');
+        $allowedSortColumns = ['start_date', 'end_date', 'contract_value', 'paid_amount', 'pending_amount', 'payment_status', 'payment_type', 'created_at'];
+
+        if (in_array($sortColumn, $allowedSortColumns, true)) {
+            $query->orderBy($sortColumn, $sortDirection);
+        } else {
+            $query->latest();
+        }
+
+        $perPage = $request->get('per_page', 15);
+
+        return ContractResource::collection($query->paginate($perPage));
     }
 
     public function store(Request $request)
@@ -38,25 +53,14 @@ class ContractController extends Controller
             'payment_type' => 'required|in:Cash,Online',
         ]);
 
-        // Overlap check
-        $overlap = Contract::where('staff_id', $data['staff_id'])
-            ->where('start_date', '<=', $data['end_date'])
-            ->where('end_date', '>=', $data['start_date'])
-            ->exists();
-
-        if ($overlap) {
-            return response()->json([
-                'message' => 'This employee is already assigned to another company for the selected dates.'
-            ], 422);
-        }
-
         $entity = Contract::create($data);
-        return new ContractResource($entity->load(['staff', 'company']));
+        $entity->syncPaymentTracking();
+        return new ContractResource($entity->load(['staff', 'company', 'payments']));
     }
 
     public function show($id)
     {
-        return new ContractResource(Contract::findOrFail($id));
+        return new ContractResource(Contract::with(['staff', 'company', 'payments'])->findOrFail($id));
     }
 
     public function update(Request $request, $id)
@@ -71,27 +75,19 @@ class ContractController extends Controller
             'payment_type' => 'sometimes|in:Cash,Online',
         ]);
 
-        // Overlap check
-        if ($request->hasAny(['staff_id', 'start_date', 'end_date'])) {
-            $staffId = $request->get('staff_id', $entity->staff_id);
-            $startDate = $request->get('start_date', $entity->start_date);
-            $endDate = $request->get('end_date', $entity->end_date);
+        $newContractValue = array_key_exists('contract_value', $data)
+            ? round((float) $data['contract_value'], 2)
+            : round((float) $entity->contract_value, 2);
 
-            $overlap = Contract::where('staff_id', $staffId)
-                ->where('id', '!=', $id)
-                ->where('start_date', '<=', $endDate)
-                ->where('end_date', '>=', $startDate)
-                ->exists();
-
-            if ($overlap) {
-                return response()->json([
-                    'message' => 'This employee is already assigned to another company for the selected dates.'
-                ], 422);
-            }
+        if ($newContractValue < (float) $entity->paid_amount) {
+            return response()->json([
+                'message' => 'Contract value cannot be less than the amount already recorded in payment history.'
+            ], 422);
         }
 
         $entity->update($data);
-        return new ContractResource($entity->load(['staff', 'company']));
+        $entity->syncPaymentTracking();
+        return new ContractResource($entity->load(['staff', 'company', 'payments']));
     }
 
     public function destroy($id)

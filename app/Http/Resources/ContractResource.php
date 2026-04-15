@@ -17,7 +17,11 @@ class ContractResource extends JsonResource
             'start_date' => $this->start_date->format('Y-m-d'),
             'end_date' => $this->end_date->format('Y-m-d'),
             'contract_value' => (float) $this->contract_value,
+            'paid_amount' => (float) $this->paid_amount,
+            'pending_amount' => (float) $this->pending_amount,
+            'payment_status' => $this->payment_status,
             'payment_type' => $this->payment_type,
+            'payments' => ContractPaymentResource::collection($this->whenLoaded('payments')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
