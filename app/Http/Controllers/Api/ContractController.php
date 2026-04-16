@@ -10,7 +10,7 @@ class ContractController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Contract::with(['staff', 'company']);
+        $query = Contract::with(['staff', 'company'])->withSum('expenses as expense_total', 'amount');
         
         if ($request->filled('search')) {
             $search = $request->get('search');
@@ -55,12 +55,16 @@ class ContractController extends Controller
 
         $entity = Contract::create($data);
         $entity->syncPaymentTracking();
-        return new ContractResource($entity->load(['staff', 'company', 'payments']));
+        return new ContractResource($entity->load(['staff', 'company', 'payments'])->loadSum('expenses as expense_total', 'amount'));
     }
 
     public function show($id)
     {
-        return new ContractResource(Contract::with(['staff', 'company', 'payments'])->findOrFail($id));
+        return new ContractResource(
+            Contract::with(['staff', 'company', 'payments'])
+                ->withSum('expenses as expense_total', 'amount')
+                ->findOrFail($id)
+        );
     }
 
     public function update(Request $request, $id)
@@ -87,7 +91,7 @@ class ContractController extends Controller
 
         $entity->update($data);
         $entity->syncPaymentTracking();
-        return new ContractResource($entity->load(['staff', 'company', 'payments']));
+        return new ContractResource($entity->load(['staff', 'company', 'payments'])->loadSum('expenses as expense_total', 'amount'));
     }
 
     public function destroy($id)

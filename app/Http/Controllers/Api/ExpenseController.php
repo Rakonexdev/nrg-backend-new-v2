@@ -8,7 +8,7 @@ class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Expense::with(['category', 'subcategory', 'recorder']);
+        $query = Expense::with(['category', 'subcategory', 'recorder', 'company', 'staff', 'contract.staff', 'contract.company']);
 
         if ($request->category_id) {
             $query->where('category_id', $request->category_id);
@@ -16,6 +16,10 @@ class ExpenseController extends Controller
 
         if ($request->date) {
             $query->whereDate('expense_date', $request->date);
+        }
+
+        if ($request->contract_id) {
+            $query->where('contract_id', $request->contract_id);
         }
 
         if ($request->search) {
@@ -47,7 +51,14 @@ class ExpenseController extends Controller
                 'description' => 'nullable|string',
                 'company_id' => 'nullable|exists:companies,id',
                 'staff_id' => 'nullable|exists:staff,id',
+                'contract_id' => 'nullable|exists:contracts,id',
             ]);
+
+            if (!empty($data['contract_id'])) {
+                $contract = \App\Models\Contract::findOrFail($data['contract_id']);
+                $data['company_id'] = $contract->company_id;
+                $data['staff_id'] = $contract->staff_id;
+            }
             
             $data['recorded_by'] = $request->user()?->id;
             
@@ -56,7 +67,7 @@ class ExpenseController extends Controller
             }
             
             $expense = Expense::create($data);
-            return $expense->load(['category', 'subcategory']);
+            return $expense->load(['category', 'subcategory', 'company', 'staff', 'contract.staff', 'contract.company']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation error',
@@ -70,7 +81,7 @@ class ExpenseController extends Controller
 
     public function show($id)
     {
-        return Expense::with(['category', 'subcategory', 'recorder'])->findOrFail($id);
+        return Expense::with(['category', 'subcategory', 'recorder', 'company', 'staff', 'contract.staff', 'contract.company'])->findOrFail($id);
     }
 
     public function update(Request $request, $id)
@@ -87,10 +98,23 @@ class ExpenseController extends Controller
                 'description' => 'nullable|string',
                 'company_id' => 'nullable|exists:companies,id',
                 'staff_id' => 'nullable|exists:staff,id',
+                'contract_id' => 'nullable|exists:contracts,id',
             ]);
+
+            if (array_key_exists('contract_id', $data) && !empty($data['contract_id'])) {
+                $contract = \App\Models\Contract::findOrFail($data['contract_id']);
+                $data['company_id'] = $contract->company_id;
+                $data['staff_id'] = $contract->staff_id;
+            }
+
+            if (array_key_exists('contract_id', $data) && empty($data['contract_id'])) {
+                $data['contract_id'] = null;
+                $data['company_id'] = null;
+                $data['staff_id'] = null;
+            }
             
             $expense->update($data);
-            return $expense->load(['category', 'subcategory']);
+            return $expense->load(['category', 'subcategory', 'company', 'staff', 'contract.staff', 'contract.company']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation error',

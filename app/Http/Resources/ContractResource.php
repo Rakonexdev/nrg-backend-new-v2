@@ -19,6 +19,8 @@ class ContractResource extends JsonResource
             'contract_value' => (float) $this->contract_value,
             'paid_amount' => (float) $this->paid_amount,
             'pending_amount' => (float) $this->pending_amount,
+            'expense_total' => (float) ($this->expense_total ?? 0),
+            'profit_amount' => (float) $this->paid_amount - (float) ($this->expense_total ?? 0),
             'payment_status' => $this->payment_status,
             'payment_type' => $this->payment_type,
             'payments' => ContractPaymentResource::collection($this->whenLoaded('payments')),

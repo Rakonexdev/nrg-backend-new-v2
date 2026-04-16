@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 class Expense extends Model
 {
     protected $fillable = [
-        'expense_date', 'category_id', 'subcategory_id', 'staff_id', 'company_id', 
+        'expense_date', 'category_id', 'subcategory_id', 'staff_id', 'company_id', 'contract_id',
         'amount', 'payment_method', 'vendor_name', 'description', 'recorded_by'
     ];
 
@@ -28,6 +28,10 @@ class Expense extends Model
 
     public function company() {
         return $this->belongsTo(Company::class);
+    }
+
+    public function contract() {
+        return $this->belongsTo(Contract::class);
     }
 
     public function recorder() {
