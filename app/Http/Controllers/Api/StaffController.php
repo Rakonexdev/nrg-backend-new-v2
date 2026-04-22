@@ -51,20 +51,23 @@ class StaffController extends Controller
         // Expiry filters
         if ($request->has('filter')) {
             $now = \Carbon\Carbon::now();
-            $thirtyDays = \Carbon\Carbon::now()->addDays(30);
+            $monthStart = $now->copy()->startOfMonth();
+            $monthEnd = $now->copy()->endOfMonth();
 
             switch ($request->get('filter')) {
                 case 'expiring_qid':
-                    $query->whereBetween('qid_expiry', [$now, $thirtyDays]);
+                    $query->whereBetween('qid_expiry', [$monthStart, $monthEnd]);
                     break;
                 case 'expired_qid':
                     $query->where('qid_expiry', '<', $now);
                     break;
                 case 'expiring_passport':
-                    $query->whereBetween('passport_expiry', [$now, $thirtyDays]);
+                    $query->whereBetween('passport_expiry', [$monthStart, $monthEnd]);
                     break;
                 case 'expired_passport':
-                    $query->where('passport_expiry', '<', $now);
+                    // We match the dashboard title "Passport Expiry (This Month)"
+                    // Even if the key name is 'expired_passport', we show items expiring this month
+                    $query->whereBetween('passport_expiry', [$monthStart, $monthEnd]);
                     break;
             }
         }
