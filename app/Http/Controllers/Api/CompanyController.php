@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -13,50 +14,57 @@ class CompanyController extends Controller
         $query = Company::query();
 
         // Search
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('contact_person_name', 'like', "%{$search}%")
-                  ->orWhere('contact_person_phone', 'like', "%{$search}%");
+                  ->orWhere('computer_card', 'like', "%{$search}%")
+                  ->orWhere('contact_person', 'like', "%{$search}%");
             });
         }
 
-        // Sorting
-        $sortColumn = $request->get('sort_by', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $allowedSortColumns = ['name', 'contact_person_name', 'created_at'];
-
-        if (in_array($sortColumn, $allowedSortColumns)) {
-            $query->orderBy($sortColumn, $sortDirection);
+        // Status filter
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->get('status') === 'active');
         }
 
-        // Active filter
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
+        // Simple mode for dropdowns
+        if ($request->get('mode') === 'simple') {
+            return response()->json($query->select('id', 'name')->orderBy('name')->get());
         }
 
-        // Pagination
+        // Pagination/All
+        if (!$request->has('page') && !$request->has('per_page')) {
+            return CompanyResource::collection($query->latest()->get());
+        }
+
         $perPage = $request->get('per_page', 15);
-        return CompanyResource::collection($query->paginate($perPage));
+        return CompanyResource::collection($query->latest()->paginate($perPage));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'contact_person_name' => 'nullable|string|max:255',
-            'contact_person_phone' => 'nullable|string|max:20',
-            'is_active' => 'boolean',
+            'name' => 'required|string|max:255|unique:companies,name',
+            'computer_card' => 'nullable|string|max:255',
+            'branch_number' => 'nullable|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:255',
+            'alternative_phone_number' => 'nullable|string|max:255',
+            'is_active' => 'boolean'
         ]);
 
+        if (!isset($validated['is_active'])) {
+            $validated['is_active'] = true;
+        }
+
         $company = Company::create($validated);
-        return new CompanyResource($company);
+        return response()->json($company, 201);
     }
 
-    public function show($id)
+    public function show(Company $company)
     {
-        return new CompanyResource(Company::findOrFail($id));
+        return response()->json($company);
     }
 
     public function update(Request $request, $id)
@@ -64,20 +72,22 @@ class CompanyController extends Controller
         $company = Company::findOrFail($id);
         
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'contact_person_name' => 'nullable|string|max:255',
-            'contact_person_phone' => 'nullable|string|max:20',
-            'is_active' => 'boolean',
+            'name' => 'sometimes|required|string|max:255|unique:companies,name,' . $id,
+            'computer_card' => 'nullable|string|max:255',
+            'branch_number' => 'nullable|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:255',
+            'alternative_phone_number' => 'nullable|string|max:255',
+            'is_active' => 'sometimes|boolean'
         ]);
 
         $company->update($validated);
-        return new CompanyResource($company);
+        return response()->json($company);
     }
 
-    public function destroy($id)
+    public function destroy(Company $company)
     {
-        $company = Company::findOrFail($id);
         $company->delete();
-        return response()->json(['message' => 'Company deleted']);
+        return response()->json(null, 204);
     }
 }

@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ExpenseCategory extends Model
 {
-    protected $fillable = ['name', 'parent_id'];
+    protected $fillable = ['name', 'target_type', 'parent_id', 'description'];
 
     public function parent() {
         return $this->belongsTo(ExpenseCategory::class, 'parent_id');

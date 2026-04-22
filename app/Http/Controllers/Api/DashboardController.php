@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Staff;
-use App\Models\Company;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -12,34 +11,46 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $now = Carbon::now();
-        $thirtyDaysFromNow = Carbon::now()->addDays(30);
+        $staffStats = \App\Models\Staff::selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN status = "active" THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN status = "on_leave" THEN 1 ELSE 0 END) as on_leave
+        ')->first();
+
+        $contractStats = \App\Models\Contract::selectRaw('
+            COUNT(*) as total,
+            SUM(paid_amount) as total_collected
+        ')->first();
+
+        $recentCollections = \App\Models\ContractPayment::with(['contract.staff.company', 'creator'])
+            ->latest('payment_date')
+            ->latest('id')
+            ->take(10)
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'time_ago' => $payment->created_at->diffForHumans(),
+                    'date' => $payment->payment_date->format('d M Y'),
+                    'collector' => $payment->creator?->name ?? 'System',
+                    'company' => $payment->contract?->staff?->company?->name ?? 'N/A',
+                    'staff' => $payment->contract?->staff?->name ?? 'N/A',
+                    'amount' => $payment->amount,
+                    'method' => $payment->payment_method
+                ];
+            });
 
         $stats = [
-            'total_staff' => Staff::count(),
-            'active_staff' => Staff::where('status', 'active')->count(),
-            'total_companies' => Company::count(),
-            'active_companies' => Company::where('is_active', true)->count(),
-            'expiring_qid' => Staff::whereBetween('qid_expiry', [$now, $thirtyDaysFromNow])->count(),
-            'expired_qid' => Staff::where('qid_expiry', '<', $now)->count(),
-            'expiring_passport' => Staff::whereBetween('passport_expiry', [$now, $thirtyDaysFromNow])->count(),
-            'expired_passport' => Staff::where('passport_expiry', '<', $now)->count(),
+            'total_staff' => (int) $staffStats->total,
+            'active_staff' => (int) $staffStats->active,
+            'on_leave_staff' => (int) $staffStats->on_leave,
+            'total_active_contracts' => (int) $contractStats->total,
+            'total_collected' => round((float) $contractStats->total_collected, 2),
         ];
-
-        // Monthly joining trend (last 6 months)
-        $monthlyTrend = Staff::select(
-            DB::raw('COUNT(*) as count'),
-            DB::raw("DATE_FORMAT(joining_date, '%b %Y') as month")
-        )
-        ->whereNotNull('joining_date')
-        ->where('joining_date', '>=', Carbon::now()->subMonths(6))
-        ->groupBy('month')
-        ->orderBy('joining_date')
-        ->get();
 
         return response()->json([
             'stats' => $stats,
-            'monthlyTrend' => $monthlyTrend
+            'recentCollections' => $recentCollections
         ]);
     }
 }

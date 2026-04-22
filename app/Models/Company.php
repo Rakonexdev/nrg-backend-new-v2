@@ -1,31 +1,31 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
-        'name', 'contact_person_name', 'contact_person_phone', 'is_active'
+        'name',
+        'computer_card',
+        'branch_number',
+        'contact_person',
+        'phone_number',
+        'alternative_phone_number',
+        'is_active'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    public function contracts() {
-        return $this->hasMany(Contract::class);
-    }
-
-    public function invoices() {
-        return $this->hasMany(Invoice::class);
-    }
-
-    public function collections() {
-        return $this->hasMany(Collection::class);
-    }
-
-    public function expenses() {
-        return $this->hasMany(Expense::class);
+    public function staff(): HasMany
+    {
+        return $this->hasMany(Staff::class);
     }
 }

@@ -2,10 +2,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Staff extends Model
 {
+    protected $table = 'staff';
+
     protected $fillable = [
+        'company_id',
         'name', 'nationality', 'profession', 'mobile', 
         'date_of_birth', 'passport_number', 'passport_expiry', 
         'qid_number', 'qid_expiry', 'status', 'joining_date'
@@ -18,15 +23,23 @@ class Staff extends Model
         'joining_date' => 'date',
     ];
 
-    public function documents() {
+    public function documents(): HasMany
+    {
         return $this->hasMany(StaffDocument::class);
     }
 
-    public function contracts() {
+    public function contracts(): HasMany
+    {
         return $this->hasMany(Contract::class);
     }
 
-    public function expenses() {
+    public function expenses(): HasMany
+    {
         return $this->hasMany(Expense::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }

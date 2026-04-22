@@ -7,11 +7,12 @@ class Settlement extends Model
 {
     protected $fillable = [
         'collector_id', 'settlement_date', 'total_collected', 'total_settled', 
-        'status', 'confirmed_by', 'notes'
+        'status', 'settled_at', 'confirmed_by', 'notes'
     ];
 
     protected $casts = [
         'settlement_date' => 'date',
+        'settled_at' => 'datetime',
     ];
 
     public function collector() {

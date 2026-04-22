@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 
 class AuthController extends Controller
@@ -29,5 +30,25 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return response()->json($request->user()->load('roles'));
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Current password does not match our records.'], 422);
+        }
+
+        $user->update([
+            'password' => $request->new_password
+        ]);
+
+        return response()->json(['message' => 'Password updated successfully.']);
     }
 }

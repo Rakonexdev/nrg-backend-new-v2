@@ -8,10 +8,29 @@ class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Expense::with(['category', 'subcategory', 'recorder', 'company', 'staff', 'contract.staff', 'contract.company']);
+        $query = $this->buildFilteredQuery($request);
+        $expenses = $query->orderBy('expense_date', 'desc')->paginate(15);
+        
+        return response()->json([
+            'expenses' => $expenses,
+            'stats' => $this->getStats()
+        ]);
+    }
+
+    private function buildFilteredQuery(Request $request)
+    {
+        $query = Expense::with(['category', 'subcategory', 'recorder', 'staff', 'contract.staff']);
 
         if ($request->category_id) {
             $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->start_date) {
+            $query->whereDate('expense_date', '>=', $request->start_date);
+        }
+
+        if ($request->end_date) {
+            $query->whereDate('expense_date', '<=', $request->end_date);
         }
 
         if ($request->date) {
@@ -19,23 +38,112 @@ class ExpenseController extends Controller
         }
 
         if ($request->contract_id) {
-            $query->where('contract_id', $request->contract_id);
+            if ($request->contract_id === 'null') {
+                $query->whereNull('contract_id');
+            } else {
+                $query->where('contract_id', $request->contract_id);
+            }
         }
 
         if ($request->search) {
-            $query->where(function($q) use ($request) {
-                $q->where('vendor_name', 'like', "%{$request->search}%")
-                  ->orWhere('description', 'like', "%{$request->search}%")
-                  ->orWhereHas('category', function($cq) use ($request) {
-                      $cq->where('name', 'like', "%{$request->search}%");
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->whereHas('category', function($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
                   })
-                  ->orWhereHas('subcategory', function($sq) use ($request) {
-                      $sq->where('name', 'like', "%{$request->search}%");
+                  ->orWhereHas('contract.staff', function($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('company', function($cq) use ($search) {
+                            $cq->where('name', 'like', "%{$search}%");
+                        });
                   });
+                
+                // Allow searching for "general" or "overhead" to find expenses with no contract
+                if (stripos('general expense', $search) !== false || stripos('overhead', $search) !== false) {
+                    $q->orWhereNull('contract_id');
+                }
             });
         }
 
-        return $query->orderBy('expense_date', 'desc')->paginate(15);
+        return $query;
+    }
+
+    public function export(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request);
+        $expenses = $query->orderBy('expense_date', 'desc')->get();
+
+        $filename = "Expenses_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['Date', 'Contract/Staff', 'Category', 'Reason', 'Payment Method', 'Amount'];
+
+        $callback = function() use ($expenses, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            $total = 0;
+            foreach ($expenses as $expense) {
+                $contractInfo = $expense->contract_id 
+                    ? ($expense->contract->staff->name . ' (' . ($expense->contract->staff->company->name ?? 'Individual') . ')')
+                    : 'General Expense';
+
+                fputcsv($file, [
+                    $expense->expense_date->format('Y-m-d'),
+                    $contractInfo,
+                    $expense->category->name ?? 'N/A',
+                    $expense->description,
+                    $expense->payment_method,
+                    $expense->amount
+                ]);
+
+                $total += $expense->amount;
+            }
+
+            // Add a separator row
+            fputcsv($file, ['', '', '', '', '', '']);
+            // Add the total row
+            fputcsv($file, ['TOTAL', '', '', '', '', $total]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function getStats()
+    {
+        $now = now();
+        $thisMonth = Expense::whereYear('expense_date', $now->year)
+            ->whereMonth('expense_date', $now->month);
+            
+        $lastMonth = Expense::whereYear('expense_date', $now->copy()->subMonth()->year)
+            ->whereMonth('expense_date', $now->copy()->subMonth()->month);
+            
+        $thisYear = Expense::whereYear('expense_date', $now->year);
+
+        // Separate totals by category target_type
+        $employeeExpensesThisMonth = (clone $thisMonth)
+            ->whereHas('category', fn($q) => $q->where('target_type', 'Employee'))
+            ->sum('amount');
+            
+        $companyExpensesThisMonth = (clone $thisMonth)
+            ->whereHas('category', fn($q) => $q->where('target_type', 'Company'))
+            ->sum('amount');
+
+        return [
+            'this_month' => $thisMonth->sum('amount'),
+            'this_month_employee' => $employeeExpensesThisMonth,
+            'this_month_company' => $companyExpensesThisMonth,
+            'last_month' => $lastMonth->sum('amount'),
+            'yearly' => $thisYear->sum('amount')
+        ];
     }
 
     public function store(Request $request)
@@ -47,16 +155,13 @@ class ExpenseController extends Controller
                 'subcategory_id' => 'nullable|exists:expense_categories,id',
                 'amount' => 'required|numeric',
                 'payment_method' => 'required|string',
-                'vendor_name' => 'nullable|string',
                 'description' => 'nullable|string',
-                'company_id' => 'nullable|exists:companies,id',
                 'staff_id' => 'nullable|exists:staff,id',
                 'contract_id' => 'nullable|exists:contracts,id',
             ]);
 
             if (!empty($data['contract_id'])) {
                 $contract = \App\Models\Contract::findOrFail($data['contract_id']);
-                $data['company_id'] = $contract->company_id;
                 $data['staff_id'] = $contract->staff_id;
             }
             
@@ -67,7 +172,7 @@ class ExpenseController extends Controller
             }
             
             $expense = Expense::create($data);
-            return $expense->load(['category', 'subcategory', 'company', 'staff', 'contract.staff', 'contract.company']);
+            return $expense->load(['category', 'subcategory', 'staff', 'contract.staff']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation error',
@@ -81,7 +186,7 @@ class ExpenseController extends Controller
 
     public function show($id)
     {
-        return Expense::with(['category', 'subcategory', 'recorder', 'company', 'staff', 'contract.staff', 'contract.company'])->findOrFail($id);
+        return Expense::with(['category', 'subcategory', 'recorder', 'staff', 'contract.staff'])->findOrFail($id);
     }
 
     public function update(Request $request, $id)
@@ -96,25 +201,22 @@ class ExpenseController extends Controller
                 'payment_method' => 'sometimes|required|string',
                 'vendor_name' => 'nullable|string',
                 'description' => 'nullable|string',
-                'company_id' => 'nullable|exists:companies,id',
                 'staff_id' => 'nullable|exists:staff,id',
                 'contract_id' => 'nullable|exists:contracts,id',
             ]);
 
             if (array_key_exists('contract_id', $data) && !empty($data['contract_id'])) {
                 $contract = \App\Models\Contract::findOrFail($data['contract_id']);
-                $data['company_id'] = $contract->company_id;
                 $data['staff_id'] = $contract->staff_id;
             }
 
             if (array_key_exists('contract_id', $data) && empty($data['contract_id'])) {
                 $data['contract_id'] = null;
-                $data['company_id'] = null;
                 $data['staff_id'] = null;
             }
             
             $expense->update($data);
-            return $expense->load(['category', 'subcategory', 'company', 'staff', 'contract.staff', 'contract.company']);
+            return $expense->load(['category', 'subcategory', 'staff', 'contract.staff']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation error',

@@ -31,9 +31,9 @@ class ContractPaymentController extends Controller
         $currentPaid = round((float) $contract->payments()->sum('amount'), 2);
         $newTotalPaid = round($currentPaid + (float) $data['amount'], 2);
 
-        if ($newTotalPaid > (float) $contract->contract_value) {
+        if ($newTotalPaid > (float) $contract->net_income) {
             throw ValidationException::withMessages([
-                'amount' => 'This payment would exceed the total contract value.',
+                'amount' => 'This payment would exceed the total contract value (including adjustments).',
             ]);
         }
 

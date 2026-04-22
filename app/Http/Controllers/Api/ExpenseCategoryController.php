@@ -6,9 +6,38 @@ use Illuminate\Http\Request;
 
 class ExpenseCategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return ExpenseCategory::with('parent')->get();
+        $query = ExpenseCategory::with('parent');
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('parent', function($pq) use ($search) {
+                      $pq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->has('type')) {
+            if ($request->type === 'main') {
+                $query->whereNull('parent_id');
+            } elseif ($request->type === 'sub') {
+                $query->whereNotNull('parent_id');
+            }
+        }
+
+        if ($request->filled('target_type')) {
+            $query->where('target_type', $request->target_type);
+        }
+
+        if ($request->has('per_page')) {
+            return $query->latest()->paginate($request->per_page);
+        }
+
+        return $query->get();
     }
 
     public function store(Request $request)
@@ -16,7 +45,8 @@ class ExpenseCategoryController extends Controller
         $data = $request->validate([
             'name' => 'required|string',
             'parent_id' => 'nullable|exists:expense_categories,id',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
+            'target_type' => 'nullable|in:Employee,Company'
         ]);
         return ExpenseCategory::create($data);
     }
@@ -32,7 +62,8 @@ class ExpenseCategoryController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|required|string',
             'parent_id' => 'nullable|exists:expense_categories,id',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
+            'target_type' => 'nullable|in:Employee,Company'
         ]);
         $cat->update($data);
         return $cat;

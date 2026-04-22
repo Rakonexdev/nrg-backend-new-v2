@@ -5,22 +5,37 @@ use App\Http\Controllers\Controller;
 use App\Models\Staff;
 use App\Http\Resources\StaffResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class StaffController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Staff::query()->with('documents');
+        $query = Staff::query();
+
+        // Simple mode for dropdowns (no relationships, minimal columns)
+        if ($request->get('mode') === 'simple') {
+            if ($request->filled('status')) {
+                $query->where('status', $request->get('status'));
+            }
+            $results = $query->leftJoin('companies', 'staff.company_id', '=', 'companies.id')
+                ->select('staff.id', 'staff.name', 'staff.qid_number', 'companies.name as company_name')
+                ->orderBy('staff.name')
+                ->get();
+            return response()->json($results);
+        }
+
+        $query->with(['documents', 'company']);
 
         // Search
         if ($request->has('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('qid_number', 'like', "%{$search}%")
-                  ->orWhere('passport_number', 'like', "%{$search}%")
-                  ->orWhere('nationality', 'like', "%{$search}%")
-                  ->orWhere('profession', 'like', "%{$search}%");
+                    ->orWhere('qid_number', 'like', "%{$search}%")
+                    ->orWhere('passport_number', 'like', "%{$search}%")
+                    ->orWhere('nationality', 'like', "%{$search}%")
+                    ->orWhere('profession', 'like', "%{$search}%");
             });
         }
 
@@ -37,8 +52,8 @@ class StaffController extends Controller
         if ($request->has('filter')) {
             $now = \Carbon\Carbon::now();
             $thirtyDays = \Carbon\Carbon::now()->addDays(30);
-            
-            switch($request->get('filter')) {
+
+            switch ($request->get('filter')) {
                 case 'expiring_qid':
                     $query->whereBetween('qid_expiry', [$now, $thirtyDays]);
                     break;
@@ -55,8 +70,17 @@ class StaffController extends Controller
         }
 
         // Status filter
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->get('status'));
+        }
+
+        // Company filter
+        if ($request->filled('company_id')) {
+            if ($request->company_id === 'null') {
+                $query->whereNull('company_id');
+            } else {
+                $query->where('company_id', $request->company_id);
+            }
         }
 
         // Pagination
@@ -78,6 +102,7 @@ class StaffController extends Controller
             'qid_expiry' => 'required|date',
             'joining_date' => 'nullable|date',
             'status' => 'string|in:active,inactive',
+            'company_id' => 'required|exists:companies,id',
             'qid_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
             'passport_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
         ]);
@@ -111,11 +136,23 @@ class StaffController extends Controller
             'qid_expiry' => 'sometimes|required|date',
             'joining_date' => 'nullable|date',
             'status' => 'string|in:active,inactive',
+            'company_id' => 'sometimes|required|exists:companies,id',
             'qid_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
             'passport_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
+            'delete_document_ids' => 'nullable|array',
+            'delete_document_ids.*' => 'integer|exists:staff_documents,id'
         ]);
 
         $staff->update($validated);
+
+        // Handle Document Deletions
+        if ($request->filled('delete_document_ids')) {
+            $docsToDelete = $staff->documents()->whereIn('id', $request->delete_document_ids)->get();
+            foreach ($docsToDelete as $doc) {
+                Storage::disk('public')->delete($doc->file_path);
+                $doc->delete();
+            }
+        }
 
         // Handle File Uploads
         $this->handleFileUploads($request, $staff);

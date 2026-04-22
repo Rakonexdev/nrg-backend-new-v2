@@ -6,24 +6,30 @@ use Illuminate\Database\Eloquent\Model;
 class Contract extends Model
 {
     protected $fillable = [
-        'staff_id', 'company_id', 'start_date', 'end_date', 
-        'contract_value', 'payment_type'
+        'staff_id', 'start_date', 'end_date', 
+        'total_income', 'payment_type',
+        'qid_renewal_fee', 'qid_next_renewal_date', 'passport_renewal_fee', 
+        'profession_change_fee', 'sponsorship_change_fee', 'health_card_fee', 'others_fee', 'others_reason'
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'contract_value' => 'decimal:2',
+        'qid_next_renewal_date' => 'date',
+        'total_income' => 'decimal:2',
+
         'paid_amount' => 'decimal:2',
         'pending_amount' => 'decimal:2',
+        'qid_renewal_fee' => 'decimal:2',
+        'passport_renewal_fee' => 'decimal:2',
+        'profession_change_fee' => 'decimal:2',
+        'sponsorship_change_fee' => 'decimal:2',
+        'health_card_fee' => 'decimal:2',
+        'others_fee' => 'decimal:2',
     ];
 
     public function staff() {
         return $this->belongsTo(Staff::class);
-    }
-
-    public function company() {
-        return $this->belongsTo(Company::class);
     }
 
     public function invoices() {
@@ -38,23 +44,35 @@ class Contract extends Model
         return $this->hasMany(ContractPayment::class)->latest('payment_date')->latest();
     }
 
+    public function adjustments() {
+        return $this->hasMany(ContractAdjustment::class)->latest('adjustment_date')->latest();
+    }
+
+    public function getNetIncomeAttribute()
+    {
+        return round((float) $this->total_income + (float) $this->adjustments()->sum('amount'), 2);
+    }
+
     public function syncPaymentTracking(): void
     {
-        $contractValue = round((float) $this->contract_value, 2);
+        $initialTotalIncome = round((float) $this->total_income, 2);
+        $adjustmentTotal = round((float) $this->adjustments()->sum('amount'), 2);
+        $netPayable = round($initialTotalIncome + $adjustmentTotal, 2);
+        
         $paidAmount = round((float) $this->payments()->sum('amount'), 2);
-        $pendingAmount = round(max($contractValue - $paidAmount, 0), 2);
+        $pendingAmount = round(max($netPayable - $paidAmount, 0), 2);
 
         $this->forceFill([
             'paid_amount' => $paidAmount,
             'pending_amount' => $pendingAmount,
-            'payment_status' => $this->resolvePaymentStatus($contractValue, $paidAmount),
+            'payment_status' => $this->resolvePaymentStatus($netPayable, $paidAmount, $pendingAmount),
         ])->save();
     }
 
-    private function resolvePaymentStatus(float $contractValue, float $paidAmount): string
+    private function resolvePaymentStatus(float $contractValue, float $paidAmount, float $pendingAmount): string
     {
         if ($paidAmount <= 0) {
-            return 'Pending';
+            return 'Payment Not Initialized';
         }
 
         if ($contractValue > 0 && $paidAmount >= $contractValue) {

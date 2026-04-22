@@ -19,7 +19,8 @@ class Invoice extends Model
     }
 
     public function company() {
-        return $this->belongsTo(Company::class);
+        // Obsolete: Company model merged into Staff
+        return null;
     }
 
     public function collections() {
