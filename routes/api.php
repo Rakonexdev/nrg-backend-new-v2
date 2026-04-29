@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ExpenseCategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ContractPaymentController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\CollectorController;
 
 // Public Auth routes
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -30,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Api\DashboardController::class, 'index']);
     Route::apiResource('companies', CompanyController::class);
     Route::apiResource('staff', StaffController::class);
+    Route::apiResource('collectors', CollectorController::class);
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
     Route::apiResource('contracts', ContractController::class);
     Route::post('/contracts/{id}/adjustments', [ContractController::class, 'addAdjustment']);
