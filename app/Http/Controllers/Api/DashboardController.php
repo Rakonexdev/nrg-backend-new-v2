@@ -34,7 +34,9 @@ class DashboardController extends Controller
                     'date' => $payment->payment_date->format('d M Y'),
                     'collector' => $payment->creator?->name ?? 'System',
                     'company' => $payment->contract?->staff?->company?->name ?? 'N/A',
+                    'company_id' => $payment->contract?->staff?->company_id,
                     'staff' => $payment->contract?->staff?->name ?? 'N/A',
+                    'staff_id' => $payment->contract?->staff_id,
                     'amount' => $payment->amount,
                     'method' => $payment->payment_method
                 ];

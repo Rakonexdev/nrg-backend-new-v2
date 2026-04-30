@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ContractPaymentController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\CollectorController;
+use App\Http\Controllers\Api\ReportController;
 
 // Public Auth routes
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -30,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Core Entities
     Route::get('/dashboard', [\App\Http\Controllers\Api\DashboardController::class, 'index']);
     Route::apiResource('companies', CompanyController::class);
+    Route::get('/companies/{id}/pending-collections', [CompanyController::class, 'getPendingCollections']);
     Route::apiResource('staff', StaffController::class);
     Route::apiResource('collectors', CollectorController::class);
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
@@ -62,4 +64,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
     Route::get('/dashboard/income-expense', [DashboardController::class, 'incomeExpense']);
+
+    // Reports
+    Route::get('/reports/collections', [ReportController::class, 'collectionsReport']);
+    Route::get('/reports/income-expenditure', [ReportController::class, 'incomeExpenditureReport']);
+
+    // Company Branches
+    Route::get('companies/{company}/branches', [App\Http\Controllers\Api\CompanyBranchController::class, 'index']);
+    Route::post('companies/{company}/branches', [App\Http\Controllers\Api\CompanyBranchController::class, 'store']);
+    Route::put('branches/{branch}', [App\Http\Controllers\Api\CompanyBranchController::class, 'update']);
+    Route::delete('branches/{branch}', [App\Http\Controllers\Api\CompanyBranchController::class, 'destroy']);
 });

@@ -16,6 +16,7 @@ class StaffResource extends JsonResource
             'nationality' => $this->nationality,
             'profession' => $this->profession,
             'mobile' => $this->mobile,
+            'alternative_mobile' => $this->alternative_mobile,
             'date_of_birth' => $this->date_of_birth ? $this->date_of_birth->format('Y-m-d') : null,
             'passport_number' => $this->passport_number,
             'passport_expiry' => $this->passport_expiry ? $this->passport_expiry->format('Y-m-d') : null,
@@ -25,6 +26,9 @@ class StaffResource extends JsonResource
             'company_id' => $this->company_id,
             'company' => $this->company,
             'company_name' => $this->company ? $this->company->name : 'N/A',
+            'branch_id' => $this->branch_id,
+            'branch' => $this->branch,
+            'branch_name' => $this->branch ? $this->branch->name : 'Main',
             'status' => $this->status,
             'qid_documents' => $this->documents->where('document_type', 'qid')->map(function($doc) {
                 return [

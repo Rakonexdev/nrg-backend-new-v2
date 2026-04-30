@@ -90,4 +90,36 @@ class CompanyController extends Controller
         $company->delete();
         return response()->json(null, 204);
     }
+
+    public function getPendingCollections($id)
+    {
+        $company = Company::findOrFail($id);
+        
+        $pendingContracts = \App\Models\Contract::with(['staff'])
+            ->where('pending_amount', '>', 0)
+            ->whereHas('staff', function($q) use ($id) {
+                $q->where('company_id', $id);
+            })
+            ->get()
+            ->map(function($contract) {
+                return [
+                    'id' => $contract->id,
+                    'staff_name' => $contract->staff?->name,
+                    'total_income' => (float) $contract->total_income,
+                    'paid_amount' => (float) $contract->paid_amount,
+                    'pending_amount' => (float) $contract->pending_amount,
+                    'payment_status' => $contract->payment_status
+                ];
+            });
+
+        return response()->json([
+            'company' => [
+                'id' => $company->id,
+                'name' => $company->name,
+                'contact_person' => $company->contact_person,
+                'phone_number' => $company->phone_number
+            ],
+            'pending_contracts' => $pendingContracts
+        ]);
+    }
 }

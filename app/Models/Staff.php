@@ -11,7 +11,8 @@ class Staff extends Model
 
     protected $fillable = [
         'company_id',
-        'name', 'nationality', 'profession', 'mobile', 
+        'branch_id',
+        'name', 'nationality', 'profession', 'mobile', 'alternative_mobile', 
         'date_of_birth', 'passport_number', 'passport_expiry', 
         'qid_number', 'qid_expiry', 'status', 'joining_date'
     ];

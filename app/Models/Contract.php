@@ -55,9 +55,11 @@ class Contract extends Model
 
     public function syncPaymentTracking(): void
     {
+        $this->refresh();
+        
         $initialTotalIncome = round((float) $this->total_income, 2);
-        $adjustmentTotal = round((float) $this->adjustments()->sum('amount'), 2);
-        $netPayable = round($initialTotalIncome + $adjustmentTotal, 2);
+        // We no longer add adjustmentTotal to netPayable to keep the contract value fixed
+        $netPayable = $initialTotalIncome;
         
         $paidAmount = round((float) $this->payments()->sum('amount'), 2);
         $pendingAmount = round(max($netPayable - $paidAmount, 0), 2);
