@@ -43,7 +43,7 @@ class ContractController extends Controller
 
     public function index(Request $request)
     {
-        $query = Contract::with(['staff.company'])->withSum('expenses as expense_total', 'amount');
+        $query = Contract::with(['staff.company', 'staff.branch'])->withSum('expenses as expense_total', 'amount');
         
         if ($request->filled('search')) {
             $search = $request->get('search');
@@ -111,7 +111,7 @@ class ContractController extends Controller
     public function show($id)
     {
         return new ContractResource(
-            Contract::with(['staff', 'payments', 'expenses', 'adjustments'])
+            Contract::with(['staff.company', 'staff.branch', 'payments.settlement', 'expenses', 'adjustments'])
                 ->withSum('expenses as expense_total', 'amount')
                 ->findOrFail($id)
         );

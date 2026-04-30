@@ -43,4 +43,9 @@ class Staff extends Model
     {
         return $this->belongsTo(Company::class);
     }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(CompanyBranch::class, 'branch_id');
+    }
 }

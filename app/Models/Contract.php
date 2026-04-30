@@ -58,8 +58,8 @@ class Contract extends Model
         $this->refresh();
         
         $initialTotalIncome = round((float) $this->total_income, 2);
-        // We no longer add adjustmentTotal to netPayable to keep the contract value fixed
-        $netPayable = $initialTotalIncome;
+        $adjustmentTotal = round((float) $this->adjustments()->sum('amount'), 2);
+        $netPayable = $initialTotalIncome + $adjustmentTotal;
         
         $paidAmount = round((float) $this->payments()->sum('amount'), 2);
         $pendingAmount = round(max($netPayable - $paidAmount, 0), 2);

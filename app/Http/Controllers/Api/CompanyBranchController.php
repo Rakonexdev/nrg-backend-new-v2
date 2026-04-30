@@ -19,6 +19,7 @@ class CompanyBranchController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'branch_number' => 'nullable|string|max:50',
             'location' => 'nullable|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'contact_number' => 'nullable|string|max:20',
@@ -27,6 +28,7 @@ class CompanyBranchController extends Controller
         $branch = CompanyBranch::create([
             'company_id' => $companyId,
             'name' => $request->name,
+            'branch_number' => $request->branch_number,
             'location' => $request->location,
             'contact_person' => $request->contact_person,
             'contact_number' => $request->contact_number,

@@ -12,6 +12,7 @@ class CompanyBranch extends Model
     protected $fillable = [
         'company_id',
         'name',
+        'branch_number',
         'location',
         'contact_person',
         'contact_number',
