@@ -7,8 +7,21 @@ use App\Http\Resources\StaffResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class StaffController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class StaffController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view_staff', only: ['index', 'show']),
+            new Middleware('permission:staff_create', only: ['store']),
+            new Middleware('permission:staff_edit', only: ['update']),
+            new Middleware('permission:staff_delete', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $query = Staff::query();

@@ -4,8 +4,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use Illuminate\Http\Request;
 
-class ExpenseController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class ExpenseController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view_expenses', only: ['index', 'show', 'export', 'getStats']),
+            new Middleware('permission:expense_create', only: ['store']),
+            new Middleware('permission:expense_edit', only: ['update']),
+            new Middleware('permission:expense_delete', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $query = $this->buildFilteredQuery($request);

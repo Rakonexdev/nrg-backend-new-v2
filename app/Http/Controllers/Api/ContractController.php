@@ -6,8 +6,20 @@ use App\Models\Contract;
 use App\Http\Resources\ContractResource;
 use Illuminate\Http\Request;
 
-class ContractController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class ContractController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view_contracts', only: ['index', 'show', 'summary']),
+            new Middleware('permission:contract_create', only: ['store']),
+            new Middleware('permission:contract_edit', only: ['update', 'addAdjustment']),
+            new Middleware('permission:contract_delete', only: ['destroy']),
+        ];
+    }
     public function summary()
     {
         $contractStats = Contract::selectRaw('

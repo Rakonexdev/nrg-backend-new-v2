@@ -13,9 +13,14 @@ class AuthController extends Controller
         $request->validate(['email' => 'required|email', 'password' => 'required']);
         if (Auth::attempt($request->only('email', 'password'))) {
             $user = User::with('roles')->find(Auth::id());
+
+            // Build user response with permissions
+            $userData = $user->toArray();
+            $userData['permissions'] = $user->getAllPermissions()->pluck('name')->values();
+
             return response()->json([
                 'token' => $user->createToken('API Token')->plainTextToken,
-                'user' => $user
+                'user' => $userData
             ]);
         }
         return response()->json(['message' => 'Unauthorized'], 401);
@@ -29,7 +34,10 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user()->load('roles'));
+        $user = $request->user()->load('roles');
+        $userData = $user->toArray();
+        $userData['permissions'] = $user->getAllPermissions()->pluck('name')->values();
+        return response()->json($userData);
     }
 
     public function changePassword(Request $request)

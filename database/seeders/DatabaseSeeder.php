@@ -14,13 +14,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Spatie roles: super_admin, admin, collector, viewer
-        $roles = ['super_admin', 'admin', 'collector', 'viewer'];
+        // 1. Seed Roles and Permissions first
+        $this->call(PermissionSeeder::class);
 
-        foreach ($roles as $role) {
-            Role::firstOrCreate(['name' => $role]);
-        }
-
+        // 2. Create Super Admin
         $superAdmin = User::firstOrCreate([
             'email' => 'superadmin@nrg.local'
         ], [
@@ -29,7 +26,17 @@ class DatabaseSeeder extends Seeder
             'mobile' => '+97412345678',
             'is_active' => true,
         ]);
-
         $superAdmin->assignRole('super_admin');
+
+        // 3. Create Default Admin
+        $admin = User::firstOrCreate([
+            'email' => 'admin@nrg.local'
+        ], [
+            'name' => 'NRG Administrator',
+            'password' => Hash::make('password'),
+            'mobile' => '+97488888888',
+            'is_active' => true,
+        ]);
+        $admin->assignRole('admin');
     }
 }

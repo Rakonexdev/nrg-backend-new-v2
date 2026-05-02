@@ -6,8 +6,20 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class CollectorController extends Controller
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class CollectorController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:view_collectors', only: ['index', 'show']),
+            new Middleware('permission:collector_create', only: ['store']),
+            new Middleware('permission:collector_edit', only: ['update']),
+            new Middleware('permission:collector_delete', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $query = User::role('collector');

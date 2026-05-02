@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\ContractPaymentController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\CollectorController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\RoleController;
 
 // Public Auth routes
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -74,4 +75,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('companies/{company}/branches', [App\Http\Controllers\Api\CompanyBranchController::class, 'store']);
     Route::put('branches/{branch}', [App\Http\Controllers\Api\CompanyBranchController::class, 'update']);
     Route::delete('branches/{branch}', [App\Http\Controllers\Api\CompanyBranchController::class, 'destroy']);
+
+    // Role & Permission Management
+    Route::prefix('roles')->middleware('permission:view_role_access')->group(function () {
+        Route::get('/', [RoleController::class, 'index']);
+        Route::get('/permissions', [RoleController::class, 'permissions']);
+        Route::post('/', [RoleController::class, 'store']);
+        Route::put('/{id}', [RoleController::class, 'update']);
+        Route::delete('/{id}', [RoleController::class, 'destroy']);
+    });
+
+    // Admin User Management
+    Route::middleware('role:super_admin')->group(function () {
+        Route::get('/admin-users', [RoleController::class, 'adminUsers']);
+        Route::post('/admin-users', [RoleController::class, 'createAdminUser']);
+        Route::put('/admin-users/{id}', [RoleController::class, 'updateAdminUser']);
+        Route::delete('/admin-users/{id}', [RoleController::class, 'deleteAdminUser']);
+    });
 });
