@@ -31,7 +31,7 @@ class PermissionSeeder extends Seeder
             // Action permissions — Staff
             'staff_create',
             'staff_edit',
-            'staff_delete',
+            'staff_status',
 
             // Action permissions — Companies
             'company_create',
