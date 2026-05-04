@@ -32,7 +32,7 @@ class StaffController extends Controller implements HasMiddleware
                 $query->where('status', $request->get('status'));
             }
             $results = $query->leftJoin('companies', 'staff.company_id', '=', 'companies.id')
-                ->select('staff.id', 'staff.name', 'staff.qid_number', 'companies.name as company_name')
+                ->select('staff.id', 'staff.name', 'staff.qid_number', 'staff.mobile', 'companies.name as company_name')
                 ->orderBy('staff.name')
                 ->get();
             return response()->json($results);
@@ -110,8 +110,8 @@ class StaffController extends Controller implements HasMiddleware
             'name' => 'required|string|max:255',
             'nationality' => 'required|string|max:255',
             'profession' => 'required|string|max:255',
-            'mobile' => 'required|string|max:20',
-            'alternative_mobile' => 'nullable|string|max:20',
+            'mobile' => 'required|string|regex:/^[0-9]{8}$/',
+            'alternative_mobile' => 'nullable|string|regex:/^[0-9]{8}$/',
             'date_of_birth' => 'required|date',
             'passport_number' => 'required|string|regex:/^[A-Z0-9]{7,15}$/i',
             'passport_expiry' => 'required|date',
@@ -146,8 +146,8 @@ class StaffController extends Controller implements HasMiddleware
             'name' => 'sometimes|required|string|max:255',
             'nationality' => 'sometimes|required|string|max:255',
             'profession' => 'sometimes|required|string|max:255',
-            'mobile' => 'sometimes|required|string|max:20',
-            'alternative_mobile' => 'nullable|string|max:20',
+            'mobile' => 'sometimes|required|string|regex:/^[0-9]{8}$/',
+            'alternative_mobile' => 'nullable|string|regex:/^[0-9]{8}$/',
             'date_of_birth' => 'sometimes|required|date',
             'passport_number' => 'sometimes|required|string|regex:/^[A-Z0-9]{7,15}$/i',
             'passport_expiry' => 'sometimes|required|date',

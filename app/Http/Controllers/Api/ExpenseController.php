@@ -163,6 +163,7 @@ class ExpenseController extends Controller implements HasMiddleware
         try {
             $data = $request->validate([
                 'expense_date' => 'required|date',
+                'validation_date' => 'nullable|date',
                 'category_id' => 'required|exists:expense_categories,id',
                 'subcategory_id' => 'nullable|exists:expense_categories,id',
                 'amount' => 'required|numeric',
@@ -170,6 +171,8 @@ class ExpenseController extends Controller implements HasMiddleware
                 'description' => 'nullable|string',
                 'staff_id' => 'nullable|exists:staff,id',
                 'contract_id' => 'nullable|exists:contracts,id',
+                'renewal_status' => 'nullable|string',
+                'renewal_notes' => 'nullable|string',
             ]);
 
             if (!empty($data['contract_id'])) {
@@ -207,6 +210,7 @@ class ExpenseController extends Controller implements HasMiddleware
             $expense = Expense::findOrFail($id);
             $data = $request->validate([
                 'expense_date' => 'sometimes|required|date',
+                'validation_date' => 'nullable|date',
                 'category_id' => 'sometimes|required|exists:expense_categories,id',
                 'subcategory_id' => 'nullable|exists:expense_categories,id',
                 'amount' => 'sometimes|required|numeric',
@@ -215,6 +219,8 @@ class ExpenseController extends Controller implements HasMiddleware
                 'description' => 'nullable|string',
                 'staff_id' => 'nullable|exists:staff,id',
                 'contract_id' => 'nullable|exists:contracts,id',
+                'renewal_status' => 'nullable|string',
+                'renewal_notes' => 'nullable|string',
             ]);
 
             if (array_key_exists('contract_id', $data) && !empty($data['contract_id'])) {
@@ -236,6 +242,43 @@ class ExpenseController extends Controller implements HasMiddleware
             ], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Update failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function finalizeRenewal($id)
+    {
+        try {
+            $expense = Expense::with(['staff', 'subcategory'])->findOrFail($id);
+            
+            if (!$expense->staff || !$expense->validation_date) {
+                return response()->json(['message' => 'Missing staff or validation date'], 400);
+            }
+
+            $subName = strtoupper($expense->subcategory?->name ?? '');
+            $staff = $expense->staff;
+
+            if (str_contains($subName, 'QID')) {
+                $staff->qid_expiry = $expense->validation_date;
+            } elseif (str_contains($subName, 'PASSPORT') || str_contains($subName, 'PP')) {
+                $staff->passport_expiry = $expense->validation_date;
+            } else {
+                return response()->json(['message' => 'Not a QID or Passport renewal expense'], 400);
+            }
+
+            $staff->save();
+            
+            // Mark expense as completed
+            $expense->update([
+                'renewal_status' => 'completed',
+                'renewal_notes' => ($expense->renewal_notes ? $expense->renewal_notes . "\n" : "") . "Finalized on " . now()->format('d M Y')
+            ]);
+
+            return response()->json([
+                'message' => 'Staff record updated successfully',
+                'staff' => $staff
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Finalization failed: ' . $e->getMessage()], 500);
         }
     }
 

@@ -59,6 +59,7 @@ class CompanyController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:companies,name',
             'computer_card' => 'nullable|string|max:255',
+            'branch_name' => 'nullable|string|max:255',
             'branch_number' => 'nullable|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'phone_number' => 'nullable|string|max:255',
@@ -86,6 +87,7 @@ class CompanyController extends Controller implements HasMiddleware
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255|unique:companies,name,' . $id,
             'computer_card' => 'nullable|string|max:255',
+            'branch_name' => 'nullable|string|max:255',
             'branch_number' => 'nullable|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'phone_number' => 'nullable|string|max:255',

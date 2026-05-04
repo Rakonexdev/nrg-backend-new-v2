@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/settlements/{id}/confirm', [SettlementController::class, 'confirm']);
 
     Route::get('/expenses/export', [ExpenseController::class, 'export']);
+    Route::post('/expenses/{id}/finalize', [ExpenseController::class, 'finalizeRenewal']);
     Route::apiResource('expenses', ExpenseController::class);
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
 

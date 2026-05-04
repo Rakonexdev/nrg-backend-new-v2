@@ -13,6 +13,7 @@ class Company extends Model
     protected $fillable = [
         'name',
         'computer_card',
+        'branch_name',
         'branch_number',
         'contact_person',
         'phone_number',
