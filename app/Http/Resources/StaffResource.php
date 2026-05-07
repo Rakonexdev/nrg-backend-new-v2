@@ -29,15 +29,16 @@ class StaffResource extends JsonResource
             'branch_id' => $this->branch_id,
             'branch' => $this->branch,
             'branch_name' => $this->branch ? $this->branch->name : 'Main',
+            'branch_number' => $this->branch ? $this->branch->branch_number : null,
             'status' => $this->status,
-            'qid_documents' => $this->documents->where('document_type', 'qid')->map(function($doc) {
+            'qid_documents' => $this->documents->where('document_type', 'qid')->map(function ($doc) {
                 return [
                     'id' => $doc->id,
                     'name' => $doc->file_name,
                     'url' => Storage::url($doc->file_path),
                 ];
             })->values(),
-            'passport_documents' => $this->documents->where('document_type', 'passport')->map(function($doc) {
+            'passport_documents' => $this->documents->where('document_type', 'passport')->map(function ($doc) {
                 return [
                     'id' => $doc->id,
                     'name' => $doc->file_name,
@@ -46,6 +47,8 @@ class StaffResource extends JsonResource
             })->values(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'qid_days_left' => $this->qid_expiry ? \Carbon\Carbon::now()->startOfDay()->diffInDays($this->qid_expiry->startOfDay(), false) : null,
+            'passport_days_left' => $this->passport_expiry ? \Carbon\Carbon::now()->startOfDay()->diffInDays($this->passport_expiry->startOfDay(), false) : null,
         ];
     }
 }

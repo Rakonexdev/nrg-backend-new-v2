@@ -2,7 +2,9 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
+use App\Models\StaffDocument;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -31,7 +33,7 @@ class ExpenseController extends Controller implements HasMiddleware
 
     private function buildFilteredQuery(Request $request)
     {
-        $query = Expense::with(['category', 'subcategory', 'recorder', 'staff', 'contract.staff']);
+        $query = Expense::with(['category', 'subcategory', 'recorder', 'staff.branch', 'contract.staff.branch']);
 
         if ($request->category_id) {
             $query->where('category_id', $request->category_id);
@@ -234,6 +236,38 @@ class ExpenseController extends Controller implements HasMiddleware
             }
             
             $expense->update($data);
+
+            // Handle File Uploads (QID/Passport) for the associated staff member
+            if ($expense->staff_id) {
+                if ($request->hasFile('qid_files')) {
+                    foreach ($request->file('qid_files') as $file) {
+                        $path = $file->store('staff/qid', 'public');
+                        StaffDocument::create([
+                            'staff_id' => $expense->staff_id,
+                            'document_type' => 'qid',
+                            'file_path' => $path,
+                            'file_name' => $file->getClientOriginalName(),
+                            'uploaded_by' => auth()->id() ?? 1,
+                            'uploaded_at' => now(),
+                        ]);
+                    }
+                }
+
+                if ($request->hasFile('passport_files')) {
+                    foreach ($request->file('passport_files') as $file) {
+                        $path = $file->store('staff/passport', 'public');
+                        StaffDocument::create([
+                            'staff_id' => $expense->staff_id,
+                            'document_type' => 'passport',
+                            'file_path' => $path,
+                            'file_name' => $file->getClientOriginalName(),
+                            'uploaded_by' => auth()->id() ?? 1,
+                            'uploaded_at' => now(),
+                        ]);
+                    }
+                }
+            }
+
             return $expense->load(['category', 'subcategory', 'staff', 'contract.staff']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([

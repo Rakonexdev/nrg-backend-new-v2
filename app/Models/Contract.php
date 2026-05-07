@@ -6,10 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 class Contract extends Model
 {
     protected $fillable = [
-        'staff_id', 'start_date', 'end_date', 
-        'total_income', 'payment_type',
-        'qid_renewal_fee', 'qid_next_renewal_date', 'passport_renewal_fee', 
-        'profession_change_fee', 'sponsorship_change_fee', 'health_card_fee', 'others_fee', 'others_reason'
+        'staff_id',
+        'start_date',
+        'end_date',
+        'total_income',
+        'payment_type',
+        'qid_renewal_fee',
+        'qid_next_renewal_date',
+        'passport_renewal_fee',
+        'profession_change_fee',
+        'sponsorship_change_fee',
+        'health_card_fee',
+        'others_fee',
+        'others_reason'
     ];
 
     protected $casts = [
@@ -28,23 +37,28 @@ class Contract extends Model
         'others_fee' => 'decimal:2',
     ];
 
-    public function staff() {
+    public function staff()
+    {
         return $this->belongsTo(Staff::class);
     }
 
-    public function invoices() {
+    public function invoices()
+    {
         return $this->hasMany(Invoice::class);
     }
 
-    public function expenses() {
+    public function expenses()
+    {
         return $this->hasMany(Expense::class);
     }
 
-    public function payments() {
+    public function payments()
+    {
         return $this->hasMany(ContractPayment::class)->latest('payment_date')->latest();
     }
 
-    public function adjustments() {
+    public function adjustments()
+    {
         return $this->hasMany(ContractAdjustment::class)->latest('adjustment_date')->latest();
     }
 
@@ -56,18 +70,19 @@ class Contract extends Model
     public function syncPaymentTracking(): void
     {
         $this->refresh();
-        
+
         $initialTotalIncome = round((float) $this->total_income, 2);
-        $adjustmentTotal = round((float) $this->adjustments()->sum('amount'), 2);
-        $netPayable = $initialTotalIncome + $adjustmentTotal;
         
         $paidAmount = round((float) $this->payments()->sum('amount'), 2);
-        $pendingAmount = round(max($netPayable - $paidAmount, 0), 2);
+        
+        // Pending is strictly the contract value minus regular payments
+        // Additional amounts (adjustments) are tracked separately and do not affect this balance
+        $pendingAmount = round(max($initialTotalIncome - $paidAmount, 0), 2);
 
         $this->forceFill([
             'paid_amount' => $paidAmount,
             'pending_amount' => $pendingAmount,
-            'payment_status' => $this->resolvePaymentStatus($netPayable, $paidAmount, $pendingAmount),
+            'payment_status' => $this->resolvePaymentStatus($initialTotalIncome, $paidAmount, $pendingAmount),
         ])->save();
     }
 

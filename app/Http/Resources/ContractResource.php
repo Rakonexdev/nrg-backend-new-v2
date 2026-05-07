@@ -29,30 +29,30 @@ class ContractResource extends JsonResource
             'others_reason' => $this->others_reason,
             'expense_total' => (float) (
                 ($this->expense_total ?? 0) +
-                $this->qid_renewal_fee + 
-                $this->passport_renewal_fee + 
-                $this->profession_change_fee + 
-                $this->sponsorship_change_fee + 
-                $this->health_card_fee + 
+                $this->qid_renewal_fee +
+                $this->passport_renewal_fee +
+                $this->profession_change_fee +
+                $this->sponsorship_change_fee +
+                $this->health_card_fee +
                 $this->others_fee
             ),
-            'profit_amount' => (float) $this->paid_amount - (float) (
+            'profit_amount' => (float) ($this->paid_amount + $this->adjustments()->sum('amount')) - (float) (
                 ($this->expense_total ?? 0) +
-                $this->qid_renewal_fee + 
-                $this->passport_renewal_fee + 
-                $this->profession_change_fee + 
-                $this->sponsorship_change_fee + 
-                $this->health_card_fee + 
+                $this->qid_renewal_fee +
+                $this->passport_renewal_fee +
+                $this->profession_change_fee +
+                $this->sponsorship_change_fee +
+                $this->health_card_fee +
                 $this->others_fee
             ),
-            'gross_income' => (float) $this->paid_amount,
+            'gross_income' => (float) ($this->paid_amount + $this->adjustments()->sum('amount')),
             'employee_expenses_total' => (float) (
                 ($this->expense_total ?? 0) +
-                $this->qid_renewal_fee + 
-                $this->passport_renewal_fee + 
-                $this->profession_change_fee + 
-                $this->sponsorship_change_fee + 
-                $this->health_card_fee + 
+                $this->qid_renewal_fee +
+                $this->passport_renewal_fee +
+                $this->profession_change_fee +
+                $this->sponsorship_change_fee +
+                $this->health_card_fee +
                 $this->others_fee
             ),
             'payment_status' => $this->payment_status,

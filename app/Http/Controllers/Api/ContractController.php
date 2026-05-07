@@ -31,7 +31,7 @@ class ContractController extends Controller implements HasMiddleware
         ')->first();
 
         $adjustmentTotal = (float) \App\Models\ContractAdjustment::sum('amount');
-        
+
         $expenseStats = \App\Models\Expense::selectRaw('
             SUM(CASE WHEN contract_id IS NOT NULL THEN amount ELSE 0 END) as contract_linked_expenses,
             SUM(CASE WHEN contract_id IS NULL THEN amount ELSE 0 END) as overhead_expenses
@@ -56,15 +56,15 @@ class ContractController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = Contract::with(['staff.company', 'staff.branch'])->withSum('expenses as expense_total', 'amount');
-        
+
         if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function ($subQuery) use ($search) {
-                $subQuery->whereHas('staff', function($q) use ($search) {
+                $subQuery->whereHas('staff', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhereHas('company', function($cq) use ($search) {
-                          $cq->where('name', 'like', "%{$search}%");
-                      });
+                        ->orWhereHas('company', function ($cq) use ($search) {
+                            $cq->where('name', 'like', "%{$search}%");
+                        });
                 });
             });
         }
@@ -169,7 +169,7 @@ class ContractController extends Controller implements HasMiddleware
     public function addAdjustment(Request $request, $id)
     {
         $contract = Contract::findOrFail($id);
-        
+
         $data = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'reason' => 'required|string|max:255',

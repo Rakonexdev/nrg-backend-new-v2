@@ -12,6 +12,19 @@ class CompanyBranchController extends Controller
     public function index(Request $request, $companyId)
     {
         $company = Company::findOrFail($companyId);
+        
+        // Auto-sync company's primary branch_name into the branches table if it's missing
+        if ($company->branch_name) {
+            CompanyBranch::firstOrCreate(
+                ['company_id' => $company->id, 'name' => $company->branch_name],
+                [
+                    'branch_number' => $company->branch_number,
+                    'contact_person' => $company->contact_person,
+                    'contact_number' => $company->phone_number
+                ]
+            );
+        }
+
         return response()->json($company->branches()->orderBy('name')->get());
     }
 

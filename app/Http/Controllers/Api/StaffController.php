@@ -69,18 +69,16 @@ class StaffController extends Controller implements HasMiddleware
 
             switch ($request->get('filter')) {
                 case 'expiring_qid':
-                    $query->whereBetween('qid_expiry', [$monthStart, $monthEnd]);
+                    $query->where('qid_expiry', '<=', $monthEnd);
                     break;
                 case 'expired_qid':
                     $query->where('qid_expiry', '<', $now);
                     break;
                 case 'expiring_passport':
-                    $query->whereBetween('passport_expiry', [$monthStart, $monthEnd]);
+                    $query->where('passport_expiry', '<=', $monthEnd);
                     break;
                 case 'expired_passport':
-                    // We match the dashboard title "Passport Expiry (This Month)"
-                    // Even if the key name is 'expired_passport', we show items expiring this month
-                    $query->whereBetween('passport_expiry', [$monthStart, $monthEnd]);
+                    $query->where('passport_expiry', '<=', $monthEnd);
                     break;
             }
         }
