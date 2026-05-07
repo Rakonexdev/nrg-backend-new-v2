@@ -7,13 +7,14 @@ class Expense extends Model
 {
     protected $fillable = [
         'expense_date', 'validation_date', 'category_id', 'subcategory_id', 'staff_id', 'contract_id',
-        'amount', 'payment_method', 'vendor_name', 'description', 'recorded_by',
+        'amount', 'is_recoverable', 'payment_method', 'vendor_name', 'description', 'recorded_by',
         'renewal_status', 'renewal_notes'
     ];
 
     protected $casts = [
         'expense_date' => 'date',
         'validation_date' => 'date',
+        'is_recoverable' => 'boolean',
     ];
 
     public function category() {

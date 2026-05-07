@@ -31,15 +31,17 @@ class ContractController extends Controller implements HasMiddleware
         ')->first();
 
         $adjustmentTotal = (float) \App\Models\ContractAdjustment::sum('amount');
+        $recoverableTotal = (float) \App\Models\Expense::where('is_recoverable', true)->sum('amount');
+        $netAdjustments = $adjustmentTotal - $recoverableTotal;
 
         $expenseStats = \App\Models\Expense::selectRaw('
-            SUM(CASE WHEN contract_id IS NOT NULL THEN amount ELSE 0 END) as contract_linked_expenses,
-            SUM(CASE WHEN contract_id IS NULL THEN amount ELSE 0 END) as overhead_expenses
+            SUM(CASE WHEN contract_id IS NOT NULL AND is_recoverable = 0 THEN amount ELSE 0 END) as contract_linked_expenses,
+            SUM(CASE WHEN contract_id IS NULL AND is_recoverable = 0 THEN amount ELSE 0 END) as general_overheads
         ')->first();
 
-        $totalValue = (float) $contractStats->total_income_sum + $adjustmentTotal;
-        $totalContractProfit = (float) $contractStats->total_paid - ((float) $contractStats->total_fees + (float) $expenseStats->contract_linked_expenses);
-        $totalOverheads = (float) $expenseStats->overhead_expenses;
+        $totalValue = (float) $contractStats->total_income_sum + $netAdjustments;
+        $totalContractProfit = (float) $contractStats->total_paid + $netAdjustments - ((float) $contractStats->total_fees + (float) $expenseStats->contract_linked_expenses);
+        $totalOverheads = (float) $expenseStats->general_overheads;
         $netCompanyProfit = $totalContractProfit - $totalOverheads;
 
         return response()->json([
@@ -55,7 +57,10 @@ class ContractController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Contract::with(['staff.company', 'staff.branch'])->withSum('expenses as expense_total', 'amount');
+        $query = Contract::with(['staff.company', 'staff.branch'])
+            ->withSum(['expenses as expense_total' => function($q) {
+                $q->where('is_recoverable', false);
+            }], 'amount');
 
         if ($request->filled('search')) {
             $search = $request->get('search');
@@ -117,14 +122,19 @@ class ContractController extends Controller implements HasMiddleware
 
         $entity = Contract::create($data);
         $entity->syncPaymentTracking();
-        return new ContractResource($entity->load(['staff', 'payments', 'expenses'])->loadSum('expenses as expense_total', 'amount'));
+        return new ContractResource($entity->load(['staff', 'payments', 'expenses'])
+            ->loadSum(['expenses as expense_total' => function($q) {
+                $q->where('is_recoverable', false);
+            }], 'amount'));
     }
 
     public function show($id)
     {
         return new ContractResource(
             Contract::with(['staff.company', 'staff.branch', 'payments.settlement', 'expenses', 'adjustments'])
-                ->withSum('expenses as expense_total', 'amount')
+                ->withSum(['expenses as expense_total' => function($q) {
+                    $q->where('is_recoverable', false);
+                }], 'amount')
                 ->findOrFail($id)
         );
     }
@@ -163,7 +173,10 @@ class ContractController extends Controller implements HasMiddleware
 
         $entity->update($data);
         $entity->syncPaymentTracking();
-        return new ContractResource($entity->load(['staff', 'payments', 'expenses'])->loadSum('expenses as expense_total', 'amount'));
+        return new ContractResource($entity->load(['staff', 'payments', 'expenses'])
+            ->loadSum(['expenses as expense_total' => function($q) {
+                $q->where('is_recoverable', false);
+            }], 'amount'));
     }
 
     public function addAdjustment(Request $request, $id)
@@ -183,7 +196,10 @@ class ContractController extends Controller implements HasMiddleware
 
         $contract->syncPaymentTracking();
 
-        return new ContractResource($contract->load(['staff', 'payments', 'expenses', 'adjustments'])->loadSum('expenses as expense_total', 'amount'));
+        return new ContractResource($contract->load(['staff', 'payments', 'expenses', 'adjustments'])
+            ->loadSum(['expenses as expense_total' => function($q) {
+                $q->where('is_recoverable', false);
+            }], 'amount'));
     }
 
     public function destroy($id)

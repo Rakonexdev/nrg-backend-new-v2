@@ -142,9 +142,14 @@ class ExpenseController extends Controller implements HasMiddleware
             
         $thisYear = Expense::whereYear('expense_date', $now->year);
 
-        // Separate totals by category target_type
+        // Separate totals by category target_type and is_recoverable
         $employeeExpensesThisMonth = (clone $thisMonth)
             ->whereHas('category', fn($q) => $q->where('target_type', 'Employee'))
+            ->where('is_recoverable', false)
+            ->sum('amount');
+
+        $recoverableExpensesThisMonth = (clone $thisMonth)
+            ->where('is_recoverable', true)
             ->sum('amount');
             
         $companyExpensesThisMonth = (clone $thisMonth)
@@ -154,6 +159,7 @@ class ExpenseController extends Controller implements HasMiddleware
         return [
             'this_month' => $thisMonth->sum('amount'),
             'this_month_employee' => $employeeExpensesThisMonth,
+            'this_month_recoverable' => $recoverableExpensesThisMonth,
             'this_month_company' => $companyExpensesThisMonth,
             'last_month' => $lastMonth->sum('amount'),
             'yearly' => $thisYear->sum('amount')
@@ -173,6 +179,7 @@ class ExpenseController extends Controller implements HasMiddleware
                 'description' => 'nullable|string',
                 'staff_id' => 'nullable|exists:staff,id',
                 'contract_id' => 'nullable|exists:contracts,id',
+                'is_recoverable' => 'nullable|boolean',
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
             ]);
@@ -221,6 +228,7 @@ class ExpenseController extends Controller implements HasMiddleware
                 'description' => 'nullable|string',
                 'staff_id' => 'nullable|exists:staff,id',
                 'contract_id' => 'nullable|exists:contracts,id',
+                'is_recoverable' => 'nullable|boolean',
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
             ]);
