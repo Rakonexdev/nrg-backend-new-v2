@@ -105,7 +105,7 @@ class ContractController extends Controller implements HasMiddleware
             'staff_id' => 'required|exists:staff,id',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'total_income' => 'nullable|numeric|min:0',
+            'total_income' => 'required|numeric|min:0.01',
 
             'payment_type' => 'required|in:Cash,Online',
             'qid_renewal_fee' => 'nullable|numeric|min:0',
@@ -146,7 +146,7 @@ class ContractController extends Controller implements HasMiddleware
             'staff_id' => 'sometimes|exists:staff,id',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'total_income' => 'nullable|numeric|min:0',
+            'total_income' => 'required|numeric|min:0.01',
 
             'payment_type' => 'sometimes|in:Cash,Online',
             'qid_renewal_fee' => 'nullable|numeric|min:0',

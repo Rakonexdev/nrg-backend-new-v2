@@ -232,6 +232,7 @@ class DashboardController extends Controller
             'expiring_qid' => $expiringQidCount,
             'expired_passport' => $expiringPassportCount,
             'renewing_contracts' => $renewingContractsCount,
+            'pending_docs_count' => count($pendingUpdates),
         ];
 
         return response()->json([

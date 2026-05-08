@@ -72,9 +72,9 @@ class Contract extends Model
         $this->refresh();
 
         $initialTotalIncome = round((float) $this->total_income, 2);
-        
+
         $paidAmount = round((float) $this->payments()->sum('amount'), 2);
-        
+
         // Pending is strictly the contract value minus regular payments
         // Additional amounts (adjustments) are tracked separately and do not affect this balance
         $pendingAmount = round(max($initialTotalIncome - $paidAmount, 0), 2);

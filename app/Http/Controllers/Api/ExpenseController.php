@@ -24,7 +24,7 @@ class ExpenseController extends Controller implements HasMiddleware
     {
         $query = $this->buildFilteredQuery($request);
         $expenses = $query->orderBy('expense_date', 'desc')->paginate(15);
-        
+
         return response()->json([
             'expenses' => $expenses,
             'stats' => $this->getStats()
@@ -61,17 +61,17 @@ class ExpenseController extends Controller implements HasMiddleware
 
         if ($request->search) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
-                $q->whereHas('category', function($cq) use ($search) {
-                      $cq->where('name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('contract.staff', function($sq) use ($search) {
-                      $sq->where('name', 'like', "%{$search}%")
-                        ->orWhereHas('company', function($cq) use ($search) {
-                            $cq->where('name', 'like', "%{$search}%");
-                        });
-                  });
-                
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('category', function ($cq) use ($search) {
+                    $cq->where('name', 'like', "%{$search}%");
+                })
+                    ->orWhereHas('contract.staff', function ($sq) use ($search) {
+                        $sq->where('name', 'like', "%{$search}%")
+                            ->orWhereHas('company', function ($cq) use ($search) {
+                                $cq->where('name', 'like', "%{$search}%");
+                            });
+                    });
+
                 // Allow searching for "general" or "overhead" to find expenses with no contract
                 if (stripos('general expense', $search) !== false || stripos('overhead', $search) !== false) {
                     $q->orWhereNull('contract_id');
@@ -89,22 +89,22 @@ class ExpenseController extends Controller implements HasMiddleware
 
         $filename = "Expenses_" . date('Y-m-d') . ".csv";
         $headers = [
-            "Content-type"        => "text/csv",
+            "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
         ];
 
         $columns = ['Date', 'Contract/Staff', 'Category', 'Reason', 'Payment Method', 'Amount'];
 
-        $callback = function() use ($expenses, $columns) {
+        $callback = function () use ($expenses, $columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
 
             $total = 0;
             foreach ($expenses as $expense) {
-                $contractInfo = $expense->contract_id 
+                $contractInfo = $expense->contract_id
                     ? ($expense->contract->staff->name . ' (' . ($expense->contract->staff->company->name ?? 'Individual') . ')')
                     : 'General Expense';
 
@@ -136,10 +136,10 @@ class ExpenseController extends Controller implements HasMiddleware
         $now = now();
         $thisMonth = Expense::whereYear('expense_date', $now->year)
             ->whereMonth('expense_date', $now->month);
-            
+
         $lastMonth = Expense::whereYear('expense_date', $now->copy()->subMonth()->year)
             ->whereMonth('expense_date', $now->copy()->subMonth()->month);
-            
+
         $thisYear = Expense::whereYear('expense_date', $now->year);
 
         // Separate totals by category target_type and is_recoverable
@@ -151,7 +151,7 @@ class ExpenseController extends Controller implements HasMiddleware
         $recoverableExpensesThisMonth = (clone $thisMonth)
             ->where('is_recoverable', true)
             ->sum('amount');
-            
+
         $companyExpensesThisMonth = (clone $thisMonth)
             ->whereHas('category', fn($q) => $q->where('target_type', 'Company'))
             ->sum('amount');
@@ -169,16 +169,23 @@ class ExpenseController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         try {
+            $category = \App\Models\ExpenseCategory::find($request->category_id);
+            $isEmployeeExpense = $category && $category->target_type === 'Employee';
+            
+            $subCategory = \App\Models\ExpenseCategory::find($request->subcategory_id);
+            $subName = $subCategory ? strtolower($subCategory->name) : '';
+            $isRenewal = str_contains($subName, 'qid') || str_contains($subName, 'passport') || str_contains($subName, 'pp');
+
             $data = $request->validate([
                 'expense_date' => 'required|date',
-                'validation_date' => 'nullable|date',
                 'category_id' => 'required|exists:expense_categories,id',
-                'subcategory_id' => 'nullable|exists:expense_categories,id',
+                'subcategory_id' => 'required|exists:expense_categories,id',
                 'amount' => 'required|numeric',
                 'payment_method' => 'required|string',
-                'description' => 'nullable|string',
+                'description' => 'required|string',
+                'contract_id' => $isEmployeeExpense ? 'required|exists:contracts,id' : 'nullable|exists:contracts,id',
+                'validation_date' => $isRenewal ? 'required|date' : 'nullable|date',
                 'staff_id' => 'nullable|exists:staff,id',
-                'contract_id' => 'nullable|exists:contracts,id',
                 'is_recoverable' => 'nullable|boolean',
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
@@ -188,13 +195,13 @@ class ExpenseController extends Controller implements HasMiddleware
                 $contract = \App\Models\Contract::findOrFail($data['contract_id']);
                 $data['staff_id'] = $contract->staff_id;
             }
-            
+
             $data['recorded_by'] = $request->user()?->id;
-            
+
             if (!$data['recorded_by']) {
                 return response()->json(['message' => 'Unauthenticated'], 401);
             }
-            
+
             $expense = Expense::create($data);
             return $expense->load(['category', 'subcategory', 'staff', 'contract.staff']);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -217,17 +224,24 @@ class ExpenseController extends Controller implements HasMiddleware
     {
         try {
             $expense = Expense::findOrFail($id);
+            
+            $category = \App\Models\ExpenseCategory::find($request->category_id ?? $expense->category_id);
+            $isEmployeeExpense = $category && $category->target_type === 'Employee';
+            
+            $subCategory = \App\Models\ExpenseCategory::find($request->subcategory_id ?? $expense->subcategory_id);
+            $subName = $subCategory ? strtolower($subCategory->name) : '';
+            $isRenewal = str_contains($subName, 'qid') || str_contains($subName, 'passport') || str_contains($subName, 'pp');
+
             $data = $request->validate([
                 'expense_date' => 'sometimes|required|date',
-                'validation_date' => 'nullable|date',
                 'category_id' => 'sometimes|required|exists:expense_categories,id',
-                'subcategory_id' => 'nullable|exists:expense_categories,id',
+                'subcategory_id' => 'sometimes|required|exists:expense_categories,id',
                 'amount' => 'sometimes|required|numeric',
                 'payment_method' => 'sometimes|required|string',
-                'vendor_name' => 'nullable|string',
-                'description' => 'nullable|string',
+                'description' => 'sometimes|required|string',
+                'contract_id' => $isEmployeeExpense ? 'required|exists:contracts,id' : 'nullable|exists:contracts,id',
+                'validation_date' => $isRenewal ? 'required|date' : 'nullable|date',
                 'staff_id' => 'nullable|exists:staff,id',
-                'contract_id' => 'nullable|exists:contracts,id',
                 'is_recoverable' => 'nullable|boolean',
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
@@ -242,7 +256,7 @@ class ExpenseController extends Controller implements HasMiddleware
                 $data['contract_id'] = null;
                 $data['staff_id'] = null;
             }
-            
+
             $expense->update($data);
 
             // Handle File Uploads (QID/Passport) for the associated staff member
@@ -291,7 +305,7 @@ class ExpenseController extends Controller implements HasMiddleware
     {
         try {
             $expense = Expense::with(['staff', 'subcategory'])->findOrFail($id);
-            
+
             if (!$expense->staff || !$expense->validation_date) {
                 return response()->json(['message' => 'Missing staff or validation date'], 400);
             }
@@ -308,7 +322,7 @@ class ExpenseController extends Controller implements HasMiddleware
             }
 
             $staff->save();
-            
+
             // Mark expense as completed
             $expense->update([
                 'renewal_status' => 'completed',
