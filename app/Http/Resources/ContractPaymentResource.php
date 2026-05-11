@@ -14,6 +14,8 @@ class ContractPaymentResource extends JsonResource
             'amount' => (float) $this->amount,
             'payment_date' => optional($this->payment_date)->format('Y-m-d'),
             'payment_method' => $this->payment_method,
+            'subcategory' => $this->subcategory,
+            'next_payment_date' => optional($this->next_payment_date)->format('Y-m-d'),
             'notes' => $this->notes,
             'is_settled' => (bool) $this->is_settled,
             'settled_at' => $this->settled_at ? $this->settled_at->format('Y-m-d H:i:s') : null,

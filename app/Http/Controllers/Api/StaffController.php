@@ -32,7 +32,7 @@ class StaffController extends Controller implements HasMiddleware
                 $query->where('status', $request->get('status'));
             }
             $results = $query->leftJoin('companies', 'staff.company_id', '=', 'companies.id')
-                ->select('staff.id', 'staff.name', 'staff.qid_number', 'staff.mobile', 'companies.name as company_name')
+                ->select('staff.id', 'staff.name', 'staff.qid_number', 'staff.mobile', 'staff.qid_expiry', 'companies.name as company_name')
                 ->orderBy('staff.name')
                 ->get();
             return response()->json($results);

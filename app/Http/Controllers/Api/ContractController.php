@@ -74,6 +74,10 @@ class ContractController extends Controller implements HasMiddleware
             });
         }
 
+        if ($request->filled('pending_only')) {
+            $query->where('pending_amount', '>', 0);
+        }
+
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->get('payment_status'));
         }

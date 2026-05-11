@@ -25,6 +25,8 @@ class ContractPaymentController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
             'payment_method' => 'required|in:Cash,Online',
+            'subcategory' => 'nullable|string|max:255',
+            'next_payment_date' => 'nullable|date',
             'notes' => 'nullable|string|max:1000',
         ]);
 

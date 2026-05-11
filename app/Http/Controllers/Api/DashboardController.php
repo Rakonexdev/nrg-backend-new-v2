@@ -64,7 +64,8 @@ class DashboardController extends Controller
             ->whereNotNull('staff_id')
             ->get()
             ->filter(function ($expense) {
-                if (!$expense->staff || !$expense->subcategory) return false;
+                if (!$expense->staff || !$expense->subcategory)
+                    return false;
                 $subName = strtoupper($expense->subcategory->name);
                 if (str_contains($subName, 'QID')) {
                     return !$expense->staff->qid_expiry || $expense->staff->qid_expiry < $expense->validation_date;
@@ -80,7 +81,7 @@ class DashboardController extends Controller
         $expiringQidCount = \App\Models\Staff::where('qid_expiry', '<=', $thisMonthEnd)
             ->whereNotIn('id', $inProgressStaffIds)
             ->count();
-            
+
         $expiringPassportCount = \App\Models\Staff::where('passport_expiry', '<=', $thisMonthEnd)
             ->whereNotIn('id', $inProgressStaffIds)
             ->count();
@@ -121,25 +122,25 @@ class DashboardController extends Controller
                 ];
             });
 
-        $renewingContractsCount = \App\Models\Contract::where(function($q) use ($now, $thisMonthEnd) {
-                $q->where('end_date', '<=', $thisMonthEnd)
-                  ->orWhere(function($sq) use ($now) {
-                      $sq->whereNull('end_date')
-                         ->whereHas('staff', function($ssq) use ($now) {
-                             $ssq->whereMonth('joining_date', '<=', $now->month);
-                         });
-                  });
-            })->count();
+        $renewingContractsCount = \App\Models\Contract::where(function ($q) use ($now, $thisMonthEnd) {
+            $q->where('end_date', '<=', $thisMonthEnd)
+                ->orWhere(function ($sq) use ($now) {
+                    $sq->whereNull('end_date')
+                        ->whereHas('staff', function ($ssq) use ($now) {
+                            $ssq->whereMonth('joining_date', '<=', $now->month);
+                        });
+                });
+        })->count();
 
         $renewingContracts = \App\Models\Contract::with('staff.company')
-            ->where(function($q) use ($now, $thisMonthEnd) {
+            ->where(function ($q) use ($now, $thisMonthEnd) {
                 $q->where('end_date', '<=', $thisMonthEnd)
-                  ->orWhere(function($sq) use ($now) {
-                      $sq->whereNull('end_date')
-                         ->whereHas('staff', function($ssq) use ($now) {
-                             $ssq->whereMonth('joining_date', '<=', $now->month);
-                         });
-                  });
+                    ->orWhere(function ($sq) use ($now) {
+                        $sq->whereNull('end_date')
+                            ->whereHas('staff', function ($ssq) use ($now) {
+                                $ssq->whereMonth('joining_date', '<=', $now->month);
+                            });
+                    });
             })
             ->limit(5)
             ->get()

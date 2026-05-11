@@ -57,13 +57,13 @@ class CompanyController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:companies,name',
-            'computer_card' => 'required|string|max:255',
-            'branch_name' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
+            'computer_card' => 'nullable|string|max:255',
+            'branch_name' => 'nullable|string|max:255',
             'branch_number' => 'required|string|max:255',
             'contact_person' => 'required|string|max:255',
-            'phone_number' => 'required|string|max:255',
-            'alternative_phone_number' => 'nullable|string|max:255',
+            'phone_number' => 'required|string|digits:8',
+            'alternative_phone_number' => 'nullable|string|digits:8',
             'is_active' => 'boolean'
         ]);
 
@@ -85,13 +85,13 @@ class CompanyController extends Controller implements HasMiddleware
         $company = Company::findOrFail($id);
         
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255|unique:companies,name,' . $id,
-            'computer_card' => 'sometimes|required|string|max:255',
-            'branch_name' => 'sometimes|required|string|max:255',
+            'name' => 'sometimes|required|string|max:255',
+            'computer_card' => 'sometimes|nullable|string|max:255',
+            'branch_name' => 'sometimes|nullable|string|max:255',
             'branch_number' => 'sometimes|required|string|max:255',
             'contact_person' => 'sometimes|required|string|max:255',
-            'phone_number' => 'sometimes|required|string|max:255',
-            'alternative_phone_number' => 'nullable|string|max:255',
+            'phone_number' => 'sometimes|required|string|digits:8',
+            'alternative_phone_number' => 'nullable|string|digits:8',
             'is_active' => 'sometimes|boolean'
         ]);
 
