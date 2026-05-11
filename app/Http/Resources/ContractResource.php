@@ -27,6 +27,7 @@ class ContractResource extends JsonResource
             'id' => $this->id,
             'staff_id' => $this->staff_id,
             'staff' => new StaffResource($this->whenLoaded('staff')),
+            'contract_date' => $this->contract_date ? $this->contract_date->format('Y-m-d') : null,
             'start_date' => $this->start_date ? $this->start_date->format('Y-m-d') : null,
             'end_date' => $this->end_date ? $this->end_date->format('Y-m-d') : null,
             'total_income' => (float) $this->total_income,

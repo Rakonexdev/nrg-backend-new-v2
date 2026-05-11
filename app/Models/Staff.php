@@ -14,7 +14,7 @@ class Staff extends Model
         'branch_id',
         'name', 'nationality', 'profession', 'mobile', 'alternative_mobile', 
         'date_of_birth', 'passport_number', 'passport_expiry', 
-        'qid_number', 'qid_expiry', 'status', 'joining_date'
+        'qid_number', 'qid_expiry', 'status', 'joining_date', 'notes'
     ];
 
     protected $casts = [

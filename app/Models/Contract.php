@@ -18,12 +18,14 @@ class Contract extends Model
         'sponsorship_change_fee',
         'health_card_fee',
         'others_fee',
-        'others_reason'
+        'others_reason',
+        'contract_date'
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'contract_date' => 'date',
         'qid_next_renewal_date' => 'date',
         'total_income' => 'decimal:2',
 

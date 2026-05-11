@@ -119,6 +119,7 @@ class StaffController extends Controller implements HasMiddleware
             'status' => 'string|in:active,inactive',
             'company_id' => 'required|exists:companies,id',
             'branch_id' => 'nullable|exists:company_branches,id',
+            'notes' => 'nullable|string',
             'qid_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
             'passport_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
         ]);
@@ -156,6 +157,7 @@ class StaffController extends Controller implements HasMiddleware
             'status' => 'string|in:active,inactive',
             'company_id' => 'sometimes|required|exists:companies,id',
             'branch_id' => 'nullable|exists:company_branches,id',
+            'notes' => 'nullable|string',
             'qid_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
             'passport_files.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:2048',
             'delete_document_ids' => 'nullable|array',

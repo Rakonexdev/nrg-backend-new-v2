@@ -90,7 +90,7 @@ class ContractController extends Controller implements HasMiddleware
 
         $sortColumn = $request->get('sort_by', 'created_at');
         $sortDirection = $request->get('sort_direction', 'desc');
-        $allowedSortColumns = ['start_date', 'end_date', 'total_income', 'paid_amount', 'pending_amount', 'payment_status', 'payment_type', 'created_at'];
+        $allowedSortColumns = ['contract_date', 'start_date', 'end_date', 'total_income', 'paid_amount', 'pending_amount', 'payment_status', 'payment_type', 'created_at'];
 
         if (in_array($sortColumn, $allowedSortColumns, true)) {
             $query->orderBy($sortColumn, $sortDirection);
@@ -107,6 +107,7 @@ class ContractController extends Controller implements HasMiddleware
     {
         $data = $request->validate([
             'staff_id' => 'required|exists:staff,id',
+            'contract_date' => 'nullable|date',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'total_income' => 'required|numeric|min:0.01',
@@ -148,6 +149,7 @@ class ContractController extends Controller implements HasMiddleware
         $entity = Contract::findOrFail($id);
         $data = $request->validate([
             'staff_id' => 'sometimes|exists:staff,id',
+            'contract_date' => 'nullable|date',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'total_income' => 'required|numeric|min:0.01',

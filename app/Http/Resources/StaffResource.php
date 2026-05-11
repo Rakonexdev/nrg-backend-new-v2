@@ -31,6 +31,7 @@ class StaffResource extends JsonResource
             'branch_name' => $this->branch ? $this->branch->name : 'Main',
             'branch_number' => $this->branch ? $this->branch->branch_number : null,
             'status' => $this->status,
+            'notes' => $this->notes,
             'qid_documents' => $this->documents->where('document_type', 'qid')->map(function ($doc) {
                 return [
                     'id' => $doc->id,
