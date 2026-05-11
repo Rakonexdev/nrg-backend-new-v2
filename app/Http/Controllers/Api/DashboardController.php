@@ -130,7 +130,9 @@ class DashboardController extends Controller
                             $ssq->whereMonth('joining_date', '<=', $now->month);
                         });
                 });
-        })->count();
+        })
+            ->distinct('staff_id')
+            ->count('staff_id');
 
         $renewingContracts = \App\Models\Contract::with('staff.company')
             ->where(function ($q) use ($now, $thisMonthEnd) {
@@ -142,8 +144,11 @@ class DashboardController extends Controller
                             });
                     });
             })
-            ->limit(5)
+            ->latest('id')
             ->get()
+            ->unique('staff_id')
+            ->take(10)
+            ->values()
             ->map(function ($contract) use ($now) {
                 // Calculate effective end date: explicit end_date or anniversary of joining_date
                 $endDate = $contract->end_date;
@@ -164,6 +169,11 @@ class DashboardController extends Controller
                 return [
                     'id' => $contract->id,
                     'staff_name' => $contract->staff->name ?? 'N/A',
+                    'staff' => [
+                        'company' => [
+                            'name' => $contract->staff?->company?->name ?? 'N/A'
+                        ]
+                    ],
                     'end_date' => $endDate ? $endDate->format('Y-m-d') : null,
                     'days' => (int) $days,
                     'is_auto_renew' => (bool) $contract->is_auto_renew,
