@@ -57,6 +57,9 @@ class PermissionSeeder extends Seeder
             'collector_create',
             'collector_edit',
             'collector_delete',
+
+            // Action permissions — Reports
+            'report_doc_status_edit',
         ];
 
         foreach ($permissions as $permission) {
@@ -80,6 +83,7 @@ class PermissionSeeder extends Seeder
                 'view_settlements',
                 'view_reports',
                 'view_collectors',
+                'report_doc_status_edit',
             ]);
         }
 

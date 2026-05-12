@@ -68,14 +68,14 @@ class RoleController extends Controller
                 'description' => 'Control expense CRUD operations',
                 'permissions' => []
             ],
-            'settlements' => [
-                'label' => 'Settlement Management',
-                'description' => 'Control settlement operations',
-                'permissions' => []
-            ],
             'collectors' => [
                 'label' => 'Collector Management',
                 'description' => 'Control collector CRUD operations',
+                'permissions' => []
+            ],
+            'reports' => [
+                'label' => 'Report Actions',
+                'description' => 'Control actions within reports',
                 'permissions' => []
             ],
         ];
@@ -91,10 +91,10 @@ class RoleController extends Controller
                 $grouped['contracts']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'expense_')) {
                 $grouped['expenses']['permissions'][] = $perm;
-            } elseif (str_starts_with($perm, 'settlement_')) {
-                $grouped['settlements']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'collector_')) {
                 $grouped['collectors']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'report_')) {
+                $grouped['reports']['permissions'][] = $perm;
             }
         }
 

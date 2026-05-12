@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
 
 // Public Auth routes
+
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Protected routes

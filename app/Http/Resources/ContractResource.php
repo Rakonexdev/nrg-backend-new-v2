@@ -9,6 +9,7 @@ class ContractResource extends JsonResource
     public function toArray(Request $request): array
     {
         $adjustmentsSum = (float) $this->adjustments()->sum('amount');
+        $adjustmentsPaidSum = (float) $this->adjustments()->sum('paid_amount');
         $recoverableExpenseTotal = (float) $this->expenses()->where('is_recoverable', true)->sum('amount');
         $nonRecoverableExpenseTotal = (float) ($this->expense_total ?? 0); // This comes from withSum in controller
 
@@ -22,6 +23,7 @@ class ContractResource extends JsonResource
         );
 
         $netAdjustments = $adjustmentsSum - $recoverableExpenseTotal;
+        $netPaidAdjustments = $adjustmentsPaidSum - $recoverableExpenseTotal;
 
         return [
             'id' => $this->id,
@@ -32,6 +34,7 @@ class ContractResource extends JsonResource
             'end_date' => $this->end_date ? $this->end_date->format('Y-m-d') : null,
             'total_income' => (float) $this->total_income,
             'adjustment_total' => $netAdjustments,
+            'adjustment_paid_total' => $netPaidAdjustments,
             'recoverable_expense_total' => $recoverableExpenseTotal,
             'net_payable' => (float) $this->total_income,
             'paid_amount' => (float) $this->paid_amount,

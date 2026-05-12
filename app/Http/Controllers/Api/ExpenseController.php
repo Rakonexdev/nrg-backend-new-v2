@@ -16,7 +16,7 @@ class ExpenseController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:view_expenses', only: ['index', 'show', 'export', 'getStats']),
             new Middleware('permission:expense_create', only: ['store']),
-            new Middleware('permission:expense_edit', only: ['update']),
+            new Middleware('permission:expense_edit|report_doc_status_edit', only: ['update', 'finalizeRenewal']),
             new Middleware('permission:expense_delete', only: ['destroy']),
         ];
     }

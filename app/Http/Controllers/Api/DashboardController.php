@@ -117,12 +117,12 @@ class DashboardController extends Controller
             });
 
         $renewingContractsCount = \App\Models\Staff::where(function ($q) use ($now, $thisMonthEnd) {
-            $q->whereHas('latestContract', function ($cq) use ($now, $thisMonthEnd) {
-                $cq->whereBetween('end_date', [$now->copy()->startOfMonth(), $thisMonthEnd]);
+            $q->whereHas('latestContract', function ($cq) use ($thisMonthEnd) {
+                $cq->where('end_date', '<=', $thisMonthEnd);
             })
             ->orWhere(function ($sq) use ($now) {
                 $sq->whereDoesntHave('contracts')
-                   ->whereMonth('joining_date', '=', $now->month)
+                   ->whereMonth('joining_date', '<=', $now->month)
                    ->whereYear('joining_date', '<', $now->year);
             });
         })
@@ -131,13 +131,15 @@ class DashboardController extends Controller
 
         $renewingContracts = \App\Models\Staff::with(['company', 'latestContract'])
             ->where(function ($q) use ($now, $thisMonthEnd) {
-                $q->whereHas('latestContract', function ($cq) use ($now, $thisMonthEnd) {
-                    $cq->whereBetween('end_date', [$now->copy()->startOfMonth(), $thisMonthEnd]);
+                $q->whereHas('latestContract', function ($cq) use ($thisMonthEnd) {
+                    $cq->where('end_date', '<=', $thisMonthEnd);
                 })
                 ->orWhere(function ($sq) use ($now) {
                     $sq->whereDoesntHave('contracts')
-                       ->whereMonth('joining_date', '=', $now->month)
-                       ->whereYear('joining_date', '<', $now->year);
+                       ->where(function($q2) use ($now) {
+                           $q2->whereMonth('joining_date', '<=', $now->month)
+                              ->whereYear('joining_date', '<', $now->year);
+                       });
                 });
             })
             ->whereNotIn('id', $inProgressStaffIds)
@@ -151,10 +153,6 @@ class DashboardController extends Controller
                 if (!$endDate && $staff->joining_date) {
                     $joiningDate = Carbon::parse($staff->joining_date);
                     $endDate = $joiningDate->copy()->year($now->year);
-                    // Adjust to current or next year anniversary
-                    if ($endDate->lt($now->copy()->startOfMonth())) {
-                        $endDate->addYear();
-                    }
                 }
 
                 $days = $endDate ? $now->diffInDays($endDate, false) : 0;

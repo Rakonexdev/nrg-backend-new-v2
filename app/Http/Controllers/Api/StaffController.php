@@ -98,13 +98,15 @@ class StaffController extends Controller implements HasMiddleware
                     break;
                 case 'renewing_contract':
                     $query->where(function ($q) use ($now, $monthEnd) {
-                        $q->whereHas('latestContract', function ($cq) use ($now, $monthEnd) {
-                            $cq->whereBetween('end_date', [$now->copy()->startOfMonth(), $monthEnd]);
+                        $q->whereHas('latestContract', function ($cq) use ($monthEnd) {
+                            $cq->where('end_date', '<=', $monthEnd);
                         })
                         ->orWhere(function ($sq) use ($now) {
                             $sq->whereDoesntHave('contracts')
-                               ->whereMonth('joining_date', '=', $now->month)
-                               ->whereYear('joining_date', '<', $now->year);
+                               ->where(function($q2) use ($now) {
+                                   $q2->whereMonth('joining_date', '<=', $now->month)
+                                      ->whereYear('joining_date', '<', $now->year);
+                               });
                         });
                     })->whereNotIn('id', $inProgressStaffIds);
                     break;
@@ -178,7 +180,6 @@ class StaffController extends Controller implements HasMiddleware
             'date_of_birth' => 'sometimes|required|date',
             'passport_number' => 'sometimes|required|string|regex:/^[A-Z0-9]{7,15}$/i',
             'passport_expiry' => 'sometimes|required|date',
-            'qid_number' => 'sometimes|required|string|digits:11',
             'qid_number' => 'sometimes|required|string|digits:11',
             'qid_expiry' => 'sometimes|required|date',
             'joining_date' => 'sometimes|required|date',
