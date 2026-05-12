@@ -59,28 +59,41 @@ class DashboardController extends Controller
         $now = Carbon::now();
         $thisMonthEnd = $now->copy()->endOfMonth();
 
-        // Helper to get IDs of staff with in-progress renewals
-        $inProgressStaffIds = \App\Models\Expense::whereNotNull('validation_date')
+        // Helper to get IDs of staff with in-progress renewals (not yet completed)
+        $inProgressQuery = \App\Models\Expense::whereNotNull('validation_date')
             ->whereNotNull('staff_id')
+            ->where(function($q) {
+                $q->whereNull('renewal_status')
+                  ->orWhere('renewal_status', '!=', 'completed');
+            });
+
+        $qidInProgressIds = (clone $inProgressQuery)
             ->whereHas('subcategory', function ($q) {
-                $q->where(function ($sq) {
-                    $sq->where('name', 'like', '%QID%')
-                       ->orWhere('name', 'like', '%PASSPORT%')
-                       ->orWhere('name', 'like', '%PP%');
-                });
+                $q->where('name', 'like', '%QID%');
             })
             ->pluck('staff_id')
-            ->unique();
+            ->unique()
+            ->toArray();
+
+        $passportInProgressIds = (clone $inProgressQuery)
+            ->whereHas('subcategory', function ($q) {
+                $q->where('name', 'like', '%PASSPORT%')
+                   ->orWhere('name', 'like', '%PP%');
+            })
+            ->pluck('staff_id')
+            ->unique()
+            ->toArray();
 
         $expiringQidCount = \App\Models\Staff::where('qid_expiry', '<=', $thisMonthEnd)
-            ->whereNotIn('id', $inProgressStaffIds)
+            ->whereNotIn('id', $qidInProgressIds)
             ->count();
 
         $expiringPassportCount = \App\Models\Staff::where('passport_expiry', '<=', $thisMonthEnd)
-            ->whereNotIn('id', $inProgressStaffIds)
+            ->whereNotIn('id', $passportInProgressIds)
             ->count();
 
-        // Upcoming expirations (next 30 days), excluding those already in progress
+        // Upcoming expirations (next 30 days)
+        // We include them if either doc is expiring, but we will filter in the map if needed
         $upcomingExpirations = \App\Models\Staff::where(function ($q) use ($now) {
             $thirtyDays = $now->copy()->addDays(30);
             $q->where('qid_expiry', '<=', $thirtyDays)
@@ -90,21 +103,34 @@ class DashboardController extends Controller
                 $q->whereNotNull('qid_expiry')
                     ->orWhereNotNull('passport_expiry');
             })
-            ->whereNotIn('id', $inProgressStaffIds)
             ->select('id', 'name', 'qid_expiry', 'passport_expiry')
             ->orderByRaw('LEAST(IFNULL(qid_expiry, "9999-12-31"), IFNULL(passport_expiry, "9999-12-31")) ASC')
-            ->take(5)
+            ->take(10) // Take more then filter
             ->get()
-            ->map(function ($staff) use ($now) {
+            ->map(function ($staff) use ($now, $qidInProgressIds, $passportInProgressIds) {
                 $qidDays = $staff->qid_expiry ? $now->diffInDays($staff->qid_expiry, false) : 999;
                 $passportDays = $staff->passport_expiry ? $now->diffInDays($staff->passport_expiry, false) : 999;
 
-                if ($qidDays >= 0 && $qidDays < $passportDays) {
+                $qidValid = $staff->qid_expiry && !in_array($staff->id, $qidInProgressIds);
+                $passportValid = $staff->passport_expiry && !in_array($staff->id, $passportInProgressIds);
+
+                // Determine which one to show (priority to the one NOT in progress and more urgent)
+                if ($qidValid && $passportValid) {
+                    if ($qidDays < $passportDays) {
+                        $type = 'QID';
+                        $days = $qidDays;
+                    } else {
+                        $type = 'Passport';
+                        $days = $passportDays;
+                    }
+                } elseif ($qidValid) {
                     $type = 'QID';
                     $days = $qidDays;
-                } else {
+                } elseif ($passportValid) {
                     $type = 'Passport';
                     $days = $passportDays;
+                } else {
+                    return null; // Both in progress
                 }
 
                 return [
@@ -114,7 +140,10 @@ class DashboardController extends Controller
                     'days' => (int) $days,
                     'status' => $days < 7 ? 'critical' : ($days < 15 ? 'warning' : 'info')
                 ];
-            });
+            })
+            ->filter()
+            ->take(5)
+            ->values();
 
         $renewingContractsCount = \App\Models\Staff::where(function ($q) use ($now, $thisMonthEnd) {
             $q->whereHas('latestContract', function ($cq) use ($thisMonthEnd) {
@@ -126,7 +155,6 @@ class DashboardController extends Controller
                    ->whereYear('joining_date', '<', $now->year);
             });
         })
-            ->whereNotIn('id', $inProgressStaffIds)
             ->count();
 
         $renewingContracts = \App\Models\Staff::with(['company', 'latestContract'])
@@ -142,10 +170,10 @@ class DashboardController extends Controller
                        });
                 });
             })
-            ->whereNotIn('id', $inProgressStaffIds)
             ->latest('id')
             ->take(10)
             ->get()
+
             ->map(function ($staff) use ($now) {
                 $contract = $staff->latestContract;
                 $endDate = $contract ? $contract->end_date : null;
@@ -228,10 +256,10 @@ class DashboardController extends Controller
             'on_leave_staff' => (int) $staffStats->on_leave,
             'total_active_contracts' => (int) $contractStats->total,
             'total_collected' => round((float) $contractStats->total_collected, 2),
-            'total_pending' => round((float) $contractStats->total_pending, 2),
+            'total_pending' => round((float) $contractStats->total_pending + (float) \App\Models\ContractAdjustment::sum('pending_amount'), 2),
             'total_profit' => round((float) $totalProfit, 2),
             'expiring_qid' => $expiringQidCount,
-            'expired_passport' => $expiringPassportCount,
+            'expiring_passport' => $expiringPassportCount,
             'renewing_contracts' => $renewingContractsCount,
             'pending_docs_count' => count($pendingUpdates),
         ];

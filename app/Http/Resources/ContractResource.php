@@ -10,6 +10,7 @@ class ContractResource extends JsonResource
     {
         $adjustmentsSum = (float) $this->adjustments()->sum('amount');
         $adjustmentsPaidSum = (float) $this->adjustments()->sum('paid_amount');
+        $adjustmentsPendingSum = (float) $this->adjustments()->sum('pending_amount');
         $recoverableExpenseTotal = (float) $this->expenses()->where('is_recoverable', true)->sum('amount');
         $nonRecoverableExpenseTotal = (float) ($this->expense_total ?? 0); // This comes from withSum in controller
 
@@ -35,6 +36,7 @@ class ContractResource extends JsonResource
             'total_income' => (float) $this->total_income,
             'adjustment_total' => $netAdjustments,
             'adjustment_paid_total' => $netPaidAdjustments,
+            'adjustment_pending_total' => $adjustmentsPendingSum,
             'recoverable_expense_total' => $recoverableExpenseTotal,
             'net_payable' => (float) $this->total_income,
             'paid_amount' => (float) $this->paid_amount,

@@ -44,11 +44,13 @@ class ContractController extends Controller implements HasMiddleware
         $totalOverheads = (float) $expenseStats->general_overheads;
         $netCompanyProfit = $totalContractProfit - $totalOverheads;
 
+        $adjustmentPendingTotal = (float) \App\Models\ContractAdjustment::sum('pending_amount');
+
         return response()->json([
             'total_contracts' => (int) $contractStats->total_contracts,
             'total_value' => round($totalValue, 2),
             'total_paid' => round((float) $contractStats->total_paid, 2),
-            'total_pending' => round((float) $contractStats->total_pending, 2),
+            'total_pending' => round((float) $contractStats->total_pending + $adjustmentPendingTotal, 2),
             'total_contract_profit' => round($totalContractProfit, 2),
             'total_overheads' => round($totalOverheads, 2),
             'net_company_profit' => round($netCompanyProfit, 2)
@@ -75,7 +77,14 @@ class ContractController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('pending_only')) {
-            $query->where('pending_amount', '>', 0);
+            $query->where(function ($q) {
+                // Main contract balance pending
+                $q->where('pending_amount', '>', 0)
+                  // OR has adjustments with pending amounts
+                  ->orWhereHas('adjustments', function ($aq) {
+                      $aq->where('pending_amount', '>', 0);
+                  });
+            });
         }
 
         if ($request->filled('payment_status')) {
