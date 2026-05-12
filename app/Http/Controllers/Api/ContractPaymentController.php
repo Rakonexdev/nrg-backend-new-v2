@@ -31,9 +31,10 @@ class ContractPaymentController extends Controller
             'contract_adjustment_id' => 'nullable|exists:contract_adjustments,id'
         ]);
 
-        if ($data['contract_adjustment_id']) {
+        $adjustmentId = $data['contract_adjustment_id'] ?? null;
+        if ($adjustmentId) {
             // Case 1: Additional Payment (Employee to NRG)
-            $adjustment = \App\Models\ContractAdjustment::findOrFail($data['contract_adjustment_id']);
+            $adjustment = \App\Models\ContractAdjustment::findOrFail($adjustmentId);
             $currentPaidOnAdjustment = round((float) $adjustment->payments()->sum('amount'), 2);
             $newTotalPaidOnAdjustment = round($currentPaidOnAdjustment + (float) $data['amount'], 2);
 
