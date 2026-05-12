@@ -191,14 +191,37 @@ class ContractController extends Controller implements HasMiddleware
 
         $data = $request->validate([
             'amount' => 'required|numeric|min:0.01',
+            'paid_amount' => 'nullable|numeric|min:0',
             'reason' => 'required|string|max:255',
             'adjustment_date' => 'required|date',
+            'next_payment_date' => 'nullable|date',
+            'payment_method' => 'nullable|string'
         ]);
 
-        $contract->adjustments()->create([
-            ...$data,
+        $totalAmount = (float) $data['amount'];
+        $paidAmount = (float) ($data['paid_amount'] ?? 0);
+        $pendingAmount = round($totalAmount - $paidAmount, 2);
+
+        $adjustment = $contract->adjustments()->create([
+            'amount' => $totalAmount,
+            'paid_amount' => $paidAmount,
+            'pending_amount' => $pendingAmount,
+            'reason' => $data['reason'],
+            'adjustment_date' => $data['adjustment_date'],
+            'next_payment_date' => $data['next_payment_date'] ?? null,
             'created_by' => auth()->id(),
         ]);
+
+        if ($paidAmount > 0) {
+            $contract->payments()->create([
+                'amount' => $paidAmount,
+                'payment_date' => $data['adjustment_date'],
+                'payment_method' => $data['payment_method'] ?? 'Cash',
+                'subcategory' => $data['reason'],
+                'contract_adjustment_id' => $adjustment->id,
+                'created_by' => auth()->id(),
+            ]);
+        }
 
         $contract->syncPaymentTracking();
 

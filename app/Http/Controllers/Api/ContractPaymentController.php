@@ -28,12 +28,16 @@ class ContractPaymentController extends Controller
             'subcategory' => 'nullable|string|max:255',
             'next_payment_date' => 'nullable|date',
             'notes' => 'nullable|string|max:1000',
+            'contract_adjustment_id' => 'nullable|exists:contract_adjustments,id'
         ]);
 
         $currentPaid = round((float) $contract->payments()->sum('amount'), 2);
         $newTotalPaid = round($currentPaid + (float) $data['amount'], 2);
 
-        if ($newTotalPaid > (float) $contract->net_income) {
+        // Calculate total income (contract value + adjustments)
+        $totalIncome = (float) $contract->total_income;
+
+        if ($newTotalPaid > $totalIncome) {
             throw ValidationException::withMessages([
                 'amount' => 'This payment would exceed the total contract value (including adjustments).',
             ]);
@@ -44,6 +48,17 @@ class ContractPaymentController extends Controller
                 ...$data,
                 'created_by' => auth()->id(),
             ]);
+
+            if ($payment->contract_adjustment_id) {
+                $adjustment = \App\Models\ContractAdjustment::find($payment->contract_adjustment_id);
+                if ($adjustment) {
+                    $paid = $adjustment->payments()->sum('amount');
+                    $adjustment->update([
+                        'paid_amount' => $paid,
+                        'pending_amount' => round($adjustment->amount - $paid, 2)
+                    ]);
+                }
+            }
 
             $contract->syncPaymentTracking();
 
@@ -59,7 +74,20 @@ class ContractPaymentController extends Controller
         $payment = ContractPayment::where('contract_id', $contract->id)->findOrFail($paymentId);
 
         DB::transaction(function () use ($payment, $contract) {
+            $adjustmentId = $payment->contract_adjustment_id;
             $payment->delete();
+
+            if ($adjustmentId) {
+                $adjustment = \App\Models\ContractAdjustment::find($adjustmentId);
+                if ($adjustment) {
+                    $paid = $adjustment->payments()->sum('amount');
+                    $adjustment->update([
+                        'paid_amount' => $paid,
+                        'pending_amount' => round($adjustment->amount - $paid, 2)
+                    ]);
+                }
+            }
+
             $contract->syncPaymentTracking();
         });
 

@@ -58,8 +58,11 @@ class ContractResource extends JsonResource
                     return [
                         'id' => $adj->id,
                         'amount' => (float) $adj->amount,
+                        'paid_amount' => (float) $adj->paid_amount,
+                        'pending_amount' => (float) $adj->pending_amount,
                         'reason' => $adj->reason,
                         'adjustment_date' => $adj->adjustment_date ? $adj->adjustment_date->format('Y-m-d') : null,
+                        'next_payment_date' => $adj->next_payment_date ? $adj->next_payment_date->format('Y-m-d') : null,
                         'created_at' => $adj->created_at,
                     ];
                 });

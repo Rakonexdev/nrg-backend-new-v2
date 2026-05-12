@@ -7,7 +7,8 @@ class ContractPayment extends Model
 {
     protected $fillable = [
         'contract_id', 'amount', 'payment_date', 'payment_method', 'notes', 'created_by',
-        'is_settled', 'settled_at', 'settlement_id', 'subcategory', 'next_payment_date'
+        'is_settled', 'settled_at', 'settlement_id', 'subcategory', 'next_payment_date',
+        'contract_adjustment_id'
     ];
 
     protected $casts = [
@@ -26,6 +27,11 @@ class ContractPayment extends Model
     public function contract()
     {
         return $this->belongsTo(Contract::class);
+    }
+
+    public function adjustment()
+    {
+        return $this->belongsTo(ContractAdjustment::class, 'contract_adjustment_id');
     }
 
     public function creator()
