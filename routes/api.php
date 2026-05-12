@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Reports
     Route::get('/reports/collections', [ReportController::class, 'collectionsReport']);
     Route::get('/reports/income-expenditure', [ReportController::class, 'incomeExpenditureReport']);
+    Route::get('/reports/documentation-status', [ReportController::class, 'documentationStatusReport']);
 
     // Company Branches
     Route::get('companies/{company}/branches', [App\Http\Controllers\Api\CompanyBranchController::class, 'index']);
