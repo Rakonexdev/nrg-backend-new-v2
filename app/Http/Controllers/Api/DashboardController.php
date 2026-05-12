@@ -62,18 +62,12 @@ class DashboardController extends Controller
         // Helper to get IDs of staff with in-progress renewals
         $inProgressStaffIds = \App\Models\Expense::whereNotNull('validation_date')
             ->whereNotNull('staff_id')
-            ->get()
-            ->filter(function ($expense) {
-                if (!$expense->staff || !$expense->subcategory)
-                    return false;
-                $subName = strtoupper($expense->subcategory->name);
-                if (str_contains($subName, 'QID')) {
-                    return !$expense->staff->qid_expiry || $expense->staff->qid_expiry < $expense->validation_date;
-                }
-                if (str_contains($subName, 'PASSPORT') || str_contains($subName, 'PP')) {
-                    return !$expense->staff->passport_expiry || $expense->staff->passport_expiry < $expense->validation_date;
-                }
-                return false;
+            ->whereHas('subcategory', function ($q) {
+                $q->where(function ($sq) {
+                    $sq->where('name', 'like', '%QID%')
+                       ->orWhere('name', 'like', '%PASSPORT%')
+                       ->orWhere('name', 'like', '%PP%');
+                });
             })
             ->pluck('staff_id')
             ->unique();
@@ -122,61 +116,59 @@ class DashboardController extends Controller
                 ];
             });
 
-        $renewingContractsCount = \App\Models\Contract::where(function ($q) use ($now, $thisMonthEnd) {
-            $q->where('end_date', '<=', $thisMonthEnd)
-                ->orWhere(function ($sq) use ($now) {
-                    $sq->whereNull('end_date')
-                        ->whereHas('staff', function ($ssq) use ($now) {
-                            $ssq->whereMonth('joining_date', '<=', $now->month);
-                        });
-                });
-        })
-            ->distinct('staff_id')
-            ->count('staff_id');
-
-        $renewingContracts = \App\Models\Contract::with('staff.company')
-            ->where(function ($q) use ($now, $thisMonthEnd) {
-                $q->where('end_date', '<=', $thisMonthEnd)
-                    ->orWhere(function ($sq) use ($now) {
-                        $sq->whereNull('end_date')
-                            ->whereHas('staff', function ($ssq) use ($now) {
-                                $ssq->whereMonth('joining_date', '<=', $now->month);
-                            });
-                    });
+        $renewingContractsCount = \App\Models\Staff::where(function ($q) use ($now, $thisMonthEnd) {
+            $q->whereHas('latestContract', function ($cq) use ($now, $thisMonthEnd) {
+                $cq->whereBetween('end_date', [$now->copy()->startOfMonth(), $thisMonthEnd]);
             })
+            ->orWhere(function ($sq) use ($now) {
+                $sq->whereDoesntHave('contracts')
+                   ->whereMonth('joining_date', '=', $now->month)
+                   ->whereYear('joining_date', '<', $now->year);
+            });
+        })
+            ->whereNotIn('id', $inProgressStaffIds)
+            ->count();
+
+        $renewingContracts = \App\Models\Staff::with(['company', 'latestContract'])
+            ->where(function ($q) use ($now, $thisMonthEnd) {
+                $q->whereHas('latestContract', function ($cq) use ($now, $thisMonthEnd) {
+                    $cq->whereBetween('end_date', [$now->copy()->startOfMonth(), $thisMonthEnd]);
+                })
+                ->orWhere(function ($sq) use ($now) {
+                    $sq->whereDoesntHave('contracts')
+                       ->whereMonth('joining_date', '=', $now->month)
+                       ->whereYear('joining_date', '<', $now->year);
+                });
+            })
+            ->whereNotIn('id', $inProgressStaffIds)
             ->latest('id')
-            ->get()
-            ->unique('staff_id')
             ->take(10)
-            ->values()
-            ->map(function ($contract) use ($now) {
-                // Calculate effective end date: explicit end_date or anniversary of joining_date
-                $endDate = $contract->end_date;
-                if (!$endDate && $contract->staff?->joining_date) {
-                    $joiningDate = Carbon::parse($contract->staff->joining_date);
-                    // Actually, if joining_date month is May, then renewal is May of ANY year.
-                    // But we want the specific end date of the CURRENT cycle.
-                    // For preview, we just show the anniversary in the current year.
-                    $endDate = $joiningDate->copy()->year($now->year)->subDay();
-                    // Wait, if they joined May 7 2025, end is May 6 2026.
-                    // If it's May 2026 now, the anniversary is May 6 2026.
+            ->get()
+            ->map(function ($staff) use ($now) {
+                $contract = $staff->latestContract;
+                $endDate = $contract ? $contract->end_date : null;
+                
+                if (!$endDate && $staff->joining_date) {
+                    $joiningDate = Carbon::parse($staff->joining_date);
+                    $endDate = $joiningDate->copy()->year($now->year);
+                    // Adjust to current or next year anniversary
                     if ($endDate->lt($now->copy()->startOfMonth())) {
                         $endDate->addYear();
                     }
                 }
 
                 $days = $endDate ? $now->diffInDays($endDate, false) : 0;
+                
                 return [
-                    'id' => $contract->id,
-                    'staff_name' => $contract->staff->name ?? 'N/A',
+                    'id' => $staff->id,
+                    'staff_name' => $staff->name,
                     'staff' => [
                         'company' => [
-                            'name' => $contract->staff?->company?->name ?? 'N/A'
+                            'name' => $staff->company?->name ?? 'N/A'
                         ]
                     ],
                     'end_date' => $endDate ? $endDate->format('Y-m-d') : null,
                     'days' => (int) $days,
-                    'is_auto_renew' => (bool) $contract->is_auto_renew,
                     'status' => $days < 0 ? 'expired' : ($days < 7 ? 'critical' : ($days < 15 ? 'warning' : 'info'))
                 ];
             })

@@ -20,6 +20,7 @@ class ContractPaymentResource extends JsonResource
             'is_settled' => (bool) $this->is_settled,
             'settled_at' => $this->settled_at ? $this->settled_at->format('Y-m-d H:i:s') : null,
             'settlement' => $this->whenLoaded('settlement'),
+            'contract_adjustment_id' => $this->contract_adjustment_id,
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
         ];

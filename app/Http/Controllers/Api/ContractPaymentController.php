@@ -31,16 +31,28 @@ class ContractPaymentController extends Controller
             'contract_adjustment_id' => 'nullable|exists:contract_adjustments,id'
         ]);
 
-        $currentPaid = round((float) $contract->payments()->sum('amount'), 2);
-        $newTotalPaid = round($currentPaid + (float) $data['amount'], 2);
+        if ($data['contract_adjustment_id']) {
+            // Case 1: Additional Payment (Employee to NRG)
+            $adjustment = \App\Models\ContractAdjustment::findOrFail($data['contract_adjustment_id']);
+            $currentPaidOnAdjustment = round((float) $adjustment->payments()->sum('amount'), 2);
+            $newTotalPaidOnAdjustment = round($currentPaidOnAdjustment + (float) $data['amount'], 2);
 
-        // Calculate total income (contract value + adjustments)
-        $totalIncome = (float) $contract->total_income;
+            if ($newTotalPaidOnAdjustment > (float) $adjustment->amount) {
+                throw ValidationException::withMessages([
+                    'amount' => 'This payment would exceed the additional amount total (QAR ' . number_format($adjustment->amount, 2) . ').',
+                ]);
+            }
+        } else {
+            // Case 2: Admin Collection (Company to NRG)
+            $currentPaidOnContract = round((float) $contract->payments()->whereNull('contract_adjustment_id')->sum('amount'), 2);
+            $newTotalPaidOnContract = round($currentPaidOnContract + (float) $data['amount'], 2);
+            $contractValue = (float) $contract->total_income;
 
-        if ($newTotalPaid > $totalIncome) {
-            throw ValidationException::withMessages([
-                'amount' => 'This payment would exceed the total contract value (including adjustments).',
-            ]);
+            if ($newTotalPaidOnContract > $contractValue) {
+                throw ValidationException::withMessages([
+                    'amount' => 'This payment would exceed the total contract value (QAR ' . number_format($contractValue, 2) . ').',
+                ]);
+            }
         }
 
         $payment = DB::transaction(function () use ($contract, $data) {

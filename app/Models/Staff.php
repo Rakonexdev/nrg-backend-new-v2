@@ -34,6 +34,11 @@ class Staff extends Model
         return $this->hasMany(Contract::class);
     }
 
+    public function latestContract()
+    {
+        return $this->hasOne(Contract::class)->latestOfMany();
+    }
+
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);

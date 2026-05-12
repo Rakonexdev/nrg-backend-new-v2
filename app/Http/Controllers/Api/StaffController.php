@@ -67,18 +67,46 @@ class StaffController extends Controller implements HasMiddleware
             $monthStart = $now->copy()->startOfMonth();
             $monthEnd = $now->copy()->endOfMonth();
 
+            // To match DashboardController, we should exclude staff who already have a renewal in progress
+            // In-progress renewals are tracked as Expenses with a validation_date and relevant subcategory
+            $inProgressStaffIds = \App\Models\Expense::whereNotNull('validation_date')
+                ->whereNotNull('staff_id')
+                ->whereHas('subcategory', function ($q) {
+                    $q->where(function ($sq) {
+                        $sq->where('name', 'like', '%QID%')
+                           ->orWhere('name', 'like', '%PASSPORT%')
+                           ->orWhere('name', 'like', '%PP%');
+                    });
+                })
+                ->pluck('staff_id')
+                ->unique();
+
             switch ($request->get('filter')) {
                 case 'expiring_qid':
-                    $query->where('qid_expiry', '<=', $monthEnd);
+                    $query->where('qid_expiry', '<=', $monthEnd)
+                        ->whereNotIn('id', $inProgressStaffIds);
                     break;
                 case 'expired_qid':
                     $query->where('qid_expiry', '<', $now);
                     break;
                 case 'expiring_passport':
-                    $query->where('passport_expiry', '<=', $monthEnd);
+                    $query->where('passport_expiry', '<=', $monthEnd)
+                        ->whereNotIn('id', $inProgressStaffIds);
                     break;
                 case 'expired_passport':
-                    $query->where('passport_expiry', '<=', $monthEnd);
+                    $query->where('passport_expiry', '<', $now);
+                    break;
+                case 'renewing_contract':
+                    $query->where(function ($q) use ($now, $monthEnd) {
+                        $q->whereHas('latestContract', function ($cq) use ($now, $monthEnd) {
+                            $cq->whereBetween('end_date', [$now->copy()->startOfMonth(), $monthEnd]);
+                        })
+                        ->orWhere(function ($sq) use ($now) {
+                            $sq->whereDoesntHave('contracts')
+                               ->whereMonth('joining_date', '=', $now->month)
+                               ->whereYear('joining_date', '<', $now->year);
+                        });
+                    })->whereNotIn('id', $inProgressStaffIds);
                     break;
             }
         }
