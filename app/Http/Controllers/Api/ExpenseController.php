@@ -148,7 +148,7 @@ class ExpenseController extends Controller implements HasMiddleware
             ->where('is_recoverable', false)
             ->sum('amount');
 
-        $recoverableExpensesThisMonth = (clone $thisMonth)
+        $personalDueExpensesThisMonth = (clone $thisMonth)
             ->where('is_recoverable', true)
             ->sum('amount');
 
@@ -159,7 +159,7 @@ class ExpenseController extends Controller implements HasMiddleware
         return [
             'this_month' => $thisMonth->sum('amount'),
             'this_month_employee' => $employeeExpensesThisMonth,
-            'this_month_recoverable' => $recoverableExpensesThisMonth,
+            'this_month_personal_due' => $personalDueExpensesThisMonth,
             'this_month_company' => $companyExpensesThisMonth,
             'last_month' => $lastMonth->sum('amount'),
             'yearly' => $thisYear->sum('amount')

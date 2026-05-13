@@ -39,6 +39,9 @@ class RoleController extends Controller
      */
     public function permissions()
     {
+        // Clear Spatie's internal cache to ensure we see newly seeded permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
         $permissions = Permission::all()->pluck('name');
 
         // Group permissions into categories for the UI
@@ -68,6 +71,11 @@ class RoleController extends Controller
                 'description' => 'Control expense CRUD operations',
                 'permissions' => []
             ],
+            'settlements' => [
+                'label' => 'Settlement Management',
+                'description' => 'Control settlement CRUD operations',
+                'permissions' => []
+            ],
             'collectors' => [
                 'label' => 'Collector Management',
                 'description' => 'Control collector CRUD operations',
@@ -78,12 +86,28 @@ class RoleController extends Controller
                 'description' => 'Control actions within reports',
                 'permissions' => []
             ],
+            'documentation' => [
+                'label' => 'Documentation',
+                'description' => 'Control documentation uploads and management',
+                'permissions' => []
+            ],
         ];
 
         foreach ($permissions as $perm) {
+            // Priority 1: Documentation Management
+            if (str_contains($perm, 'documentation')) {
+                $grouped['documentation']['permissions'][] = $perm;
+                continue;
+            }
+
+            // Priority 2: Menu Visibility
             if (str_starts_with($perm, 'view_')) {
                 $grouped['menu']['permissions'][] = $perm;
-            } elseif (str_starts_with($perm, 'staff_')) {
+                continue;
+            }
+
+            // Priority 3: Other modules
+            if (str_starts_with($perm, 'staff_')) {
                 $grouped['staff']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'company_')) {
                 $grouped['companies']['permissions'][] = $perm;
@@ -91,6 +115,8 @@ class RoleController extends Controller
                 $grouped['contracts']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'expense_')) {
                 $grouped['expenses']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'settlement_')) {
+                $grouped['settlements']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'collector_')) {
                 $grouped['collectors']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'report_')) {

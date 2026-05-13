@@ -51,6 +51,7 @@ class ContractController extends Controller implements HasMiddleware
             'total_value' => round($totalValue, 2),
             'total_paid' => round((float) $contractStats->total_paid, 2),
             'total_pending' => round((float) $contractStats->total_pending + $adjustmentPendingTotal, 2),
+            'total_personal_due_pending' => round($adjustmentPendingTotal, 2),
             'total_contract_profit' => round($totalContractProfit, 2),
             'total_overheads' => round($totalOverheads, 2),
             'net_company_profit' => round($netCompanyProfit, 2)
@@ -59,7 +60,7 @@ class ContractController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Contract::with(['staff.company', 'staff.branch'])
+        $query = Contract::with(['staff.company', 'staff.branch', 'adjustments'])
             ->withSum(['expenses as expense_total' => function($q) {
                 $q->where('is_recoverable', false);
             }], 'amount');
@@ -69,6 +70,7 @@ class ContractController extends Controller implements HasMiddleware
             $query->where(function ($subQuery) use ($search) {
                 $subQuery->whereHas('staff', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('qid_number', 'like', "%{$search}%")
                         ->orWhereHas('company', function ($cq) use ($search) {
                             $cq->where('name', 'like', "%{$search}%");
                         });
@@ -95,7 +97,13 @@ class ContractController extends Controller implements HasMiddleware
             $query->where('staff_id', $request->get('staff_id'));
         }
 
+        if ($request->filled('from_date')) {
+            $query->whereDate('contract_date', '>=', $request->get('from_date'));
+        }
 
+        if ($request->filled('to_date')) {
+            $query->whereDate('contract_date', '<=', $request->get('to_date'));
+        }
 
         $sortColumn = $request->get('sort_by', 'created_at');
         $sortDirection = $request->get('sort_direction', 'desc');

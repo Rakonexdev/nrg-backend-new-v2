@@ -53,6 +53,13 @@ class ContractResource extends JsonResource
             'profit_amount' => (float) ($this->paid_amount + $netAdjustments) - (float) ($nonRecoverableExpenseTotal + $operationalFees),
             'gross_income' => (float) ($this->paid_amount + $netAdjustments),
             'employee_expenses_total' => (float) ($nonRecoverableExpenseTotal + $operationalFees),
+            'adjustment_pending' => (float) ($this->adjustments_sum_pending_amount ?? $this->adjustments()->sum('pending_amount') ?? 0),
+            'next_personal_due_date' => $this->relationLoaded('adjustments') 
+                ? $this->adjustments->where('pending_amount', '>', 0)->min('next_payment_date')
+                : $this->adjustments()->where('pending_amount', '>', 0)->min('next_payment_date'),
+            'next_collection_due_date' => $this->relationLoaded('payments')
+                ? $this->payments->whereNull('contract_adjustment_id')->where('next_payment_date', '!=', null)->max('next_payment_date')
+                : $this->payments()->whereNull('contract_adjustment_id')->where('next_payment_date', '!=', null)->max('next_payment_date'),
             'payment_status' => $this->payment_status,
             'payment_type' => $this->payment_type,
             'payments' => ContractPaymentResource::collection($this->whenLoaded('payments')),

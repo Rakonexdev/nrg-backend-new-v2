@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\CollectorController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\GeneralDocumentController;
 
 // Public Auth routes
 
@@ -47,6 +48,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Staff Docs
     Route::get('/staff/{id}/documents', [DocumentController::class, 'index']);
     Route::post('/staff/{id}/documents', [DocumentController::class, 'store']);
+
+    // General Documents
+    Route::middleware('can:view_documentation')->group(function () {
+        Route::get('/general-documents', [GeneralDocumentController::class, 'index']);
+        Route::post('/general-documents', [GeneralDocumentController::class, 'store'])->middleware('can:documentation_create');
+        Route::post('/general-documents/{id}', [GeneralDocumentController::class, 'update'])->middleware('can:documentation_edit');
+        Route::delete('/general-documents/{id}', [GeneralDocumentController::class, 'destroy'])->middleware('can:documentation_delete');
+        Route::get('/general-documents/{id}/download', [GeneralDocumentController::class, 'download'])->middleware('can:documentation_download');
+    });
 
     // Financials
     Route::get('/collections/pending', [CollectionController::class, 'pendingCollections']);

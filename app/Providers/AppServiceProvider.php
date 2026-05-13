@@ -27,5 +27,11 @@ class AppServiceProvider extends ServiceProvider
             GenerateInitialInvoice::class
         );
         \Illuminate\Support\Facades\Schema::defaultStringLength(191);
+
+        // Implicitly grant "Super Admin" role all permissions
+        // This works in the app by using gate-related functions like auth()->user()->can() and @can()
+        \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
+            return $user->hasRole('super_admin') ? true : null;
+        });
     }
 }

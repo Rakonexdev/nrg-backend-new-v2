@@ -60,35 +60,63 @@ class PermissionSeeder extends Seeder
 
             // Action permissions — Reports
             'report_doc_status_edit',
+
+            // Action permissions — General Documentation
+            'view_documentation',
+            'documentation_create',
+            'documentation_edit',
+            'documentation_delete',
+            'documentation_download',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+            foreach (['web', 'api'] as $guard) {
+                Permission::firstOrCreate(['name' => $permission, 'guard_name' => $guard]);
+            }
         }
 
         // Super Admin gets all permissions
         $superAdminRole = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
-        $superAdminRole->syncPermissions(Permission::all());
+        // Sync only web guard permissions to web role to avoid guard mismatches
+        $superAdminRole->syncPermissions(Permission::where('guard_name', 'web')->get());
 
         // Admin role — create with default view-only permissions
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        // Don't override existing permissions if admin already has some
-        if ($adminRole->permissions->isEmpty()) {
-            $adminRole->syncPermissions([
-                'view_dashboard',
-                'view_staff',
-                'view_companies',
-                'view_contracts',
-                'view_expenses',
-                'view_settlements',
-                'view_reports',
-                'view_collectors',
-                'report_doc_status_edit',
-            ]);
-        }
+        
+        // Sync permissions for admin (overwriting or merging based on preference, here we sync the standard set)
+        $adminRole->syncPermissions([
+            'view_dashboard',
+            'view_staff',
+            'view_companies',
+            'view_contracts',
+            'view_expenses',
+            'view_settlements',
+            'view_reports',
+            'view_collectors',
+            'report_doc_status_edit',
+            'view_documentation',
+            'documentation_create',
+            'documentation_edit',
+            'documentation_delete',
+            'documentation_download',
+        ]);
 
-        // Collector and viewer roles — no dashboard permissions needed
+        // Collector and viewer roles
         Role::firstOrCreate(['name' => 'collector', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'viewer', 'guard_name' => 'web']);
+
+        // Ensure at least one Super Admin user exists
+        $admin = \App\Models\User::firstOrCreate(
+            ['email' => 'admin@nrg.com'],
+            [
+                'name' => 'Super Admin',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'is_active' => true,
+            ]
+        );
+        
+        if (!$admin->hasRole('super_admin')) {
+            $admin->assignRole('super_admin');
+        }
     }
 }
