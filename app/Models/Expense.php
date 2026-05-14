@@ -7,7 +7,7 @@ class Expense extends Model
 {
     protected $fillable = [
         'expense_date', 'validation_date', 'category_id', 'subcategory_id', 'staff_id', 'contract_id',
-        'amount', 'is_recoverable', 'payment_method', 'vendor_name', 'description', 'recorded_by',
+        'amount', 'is_recoverable', 'payment_method', 'vendor_name', 'description', 'notes', 'recorded_by',
         'renewal_status', 'renewal_notes'
     ];
 

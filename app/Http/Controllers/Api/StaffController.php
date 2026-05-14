@@ -48,7 +48,8 @@ class StaffController extends Controller implements HasMiddleware
                     ->orWhere('qid_number', 'like', "%{$search}%")
                     ->orWhere('passport_number', 'like', "%{$search}%")
                     ->orWhere('nationality', 'like', "%{$search}%")
-                    ->orWhere('profession', 'like', "%{$search}%");
+                    ->orWhere('profession', 'like', "%{$search}%")
+                    ->orWhere('notes', 'like', "%{$search}%");
             });
         }
 
@@ -118,6 +119,39 @@ class StaffController extends Controller implements HasMiddleware
                     });
                     break;
             }
+        }
+
+        // Date Range Filter (QID or Passport Expiry)
+        if ($request->from_date || $request->to_date) {
+            $dateType = $request->get('date_type', 'both');
+            $query->where(function($q) use ($request, $dateType) {
+                if ($dateType === 'qid_expiry' || $dateType === 'both') {
+                    if ($request->from_date && $request->to_date) {
+                        $q->whereBetween('qid_expiry', [$request->from_date, $request->to_date]);
+                    } elseif ($request->from_date) {
+                        $q->whereDate('qid_expiry', '>=', $request->from_date);
+                    } elseif ($request->to_date) {
+                        $q->whereDate('qid_expiry', '<=', $request->to_date);
+                    }
+                }
+
+                if ($dateType === 'passport_expiry' || $dateType === 'both') {
+                    $method = ($dateType === 'both') ? 'orWhere' : 'where';
+                    if ($request->from_date && $request->to_date) {
+                        $q->$method(function($sq) use ($request) {
+                            $sq->whereBetween('passport_expiry', [$request->from_date, $request->to_date]);
+                        });
+                    } elseif ($request->from_date) {
+                        $q->$method(function($sq) use ($request) {
+                            $sq->whereDate('passport_expiry', '>=', $request->from_date);
+                        });
+                    } elseif ($request->to_date) {
+                        $q->$method(function($sq) use ($request) {
+                            $sq->whereDate('passport_expiry', '<=', $request->to_date);
+                        });
+                    }
+                }
+            });
         }
 
         // Status filter
