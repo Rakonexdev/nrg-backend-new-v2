@@ -61,9 +61,11 @@ class ContractController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = Contract::with(['staff.company', 'staff.branch', 'adjustments'])
-            ->withSum(['expenses as expense_total' => function($q) {
-                $q->where('is_recoverable', false);
-            }], 'amount');
+            ->withSum([
+                'expenses as expense_total' => function ($q) {
+                    $q->where('is_recoverable', false);
+                }
+            ], 'amount');
 
         if ($request->filled('search')) {
             $search = $request->get('search');
@@ -82,10 +84,10 @@ class ContractController extends Controller implements HasMiddleware
             $query->where(function ($q) {
                 // Main contract balance pending
                 $q->where('pending_amount', '>', 0)
-                  // OR has adjustments with pending amounts
-                  ->orWhereHas('adjustments', function ($aq) {
-                      $aq->where('pending_amount', '>', 0);
-                  });
+                    // OR has adjustments with pending amounts
+                    ->orWhereHas('adjustments', function ($aq) {
+                        $aq->where('pending_amount', '>', 0);
+                    });
             });
         }
 
@@ -145,18 +147,22 @@ class ContractController extends Controller implements HasMiddleware
         $entity = Contract::create($data);
         $entity->syncPaymentTracking();
         return new ContractResource($entity->load(['staff', 'payments', 'expenses'])
-            ->loadSum(['expenses as expense_total' => function($q) {
-                $q->where('is_recoverable', false);
-            }], 'amount'));
+            ->loadSum([
+                'expenses as expense_total' => function ($q) {
+                    $q->where('is_recoverable', false);
+                }
+            ], 'amount'));
     }
 
     public function show($id)
     {
         return new ContractResource(
             Contract::with(['staff.company', 'staff.branch', 'payments.settlement', 'expenses', 'adjustments'])
-                ->withSum(['expenses as expense_total' => function($q) {
-                    $q->where('is_recoverable', false);
-                }], 'amount')
+                ->withSum([
+                    'expenses as expense_total' => function ($q) {
+                        $q->where('is_recoverable', false);
+                    }
+                ], 'amount')
                 ->findOrFail($id)
         );
     }
@@ -197,9 +203,11 @@ class ContractController extends Controller implements HasMiddleware
         $entity->update($data);
         $entity->syncPaymentTracking();
         return new ContractResource($entity->load(['staff', 'payments', 'expenses'])
-            ->loadSum(['expenses as expense_total' => function($q) {
-                $q->where('is_recoverable', false);
-            }], 'amount'));
+            ->loadSum([
+                'expenses as expense_total' => function ($q) {
+                    $q->where('is_recoverable', false);
+                }
+            ], 'amount'));
     }
 
     public function addAdjustment(Request $request, $id)
@@ -243,9 +251,11 @@ class ContractController extends Controller implements HasMiddleware
         $contract->syncPaymentTracking();
 
         return new ContractResource($contract->load(['staff', 'payments', 'expenses', 'adjustments'])
-            ->loadSum(['expenses as expense_total' => function($q) {
-                $q->where('is_recoverable', false);
-            }], 'amount'));
+            ->loadSum([
+                'expenses as expense_total' => function ($q) {
+                    $q->where('is_recoverable', false);
+                }
+            ], 'amount'));
     }
 
     public function destroy($id)

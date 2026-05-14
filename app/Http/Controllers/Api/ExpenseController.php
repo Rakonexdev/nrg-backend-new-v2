@@ -194,6 +194,22 @@ class ExpenseController extends Controller implements HasMiddleware
             if (!empty($data['contract_id'])) {
                 $contract = \App\Models\Contract::findOrFail($data['contract_id']);
                 $data['staff_id'] = $contract->staff_id;
+
+                // Validate available funds if recoverable
+                if (!empty($data['is_recoverable']) && $data['is_recoverable']) {
+                    $adjustmentsPaidSum = (float) $contract->adjustments()->sum('paid_amount');
+                    $recoverableExpenseTotal = (float) $contract->expenses()->where('is_recoverable', true)->sum('amount');
+                    $availableBalance = $adjustmentsPaidSum - $recoverableExpenseTotal;
+
+                    if ($data['amount'] > $availableBalance) {
+                        return response()->json([
+                            'message' => 'Validation error',
+                            'errors' => [
+                                'amount' => ["Amount exceeds available personal funds (Available: QAR " . number_format($availableBalance, 2) . ")"]
+                            ]
+                        ], 422);
+                    }
+                }
             }
 
             $data['recorded_by'] = $request->user()?->id;
@@ -250,6 +266,30 @@ class ExpenseController extends Controller implements HasMiddleware
             if (array_key_exists('contract_id', $data) && !empty($data['contract_id'])) {
                 $contract = \App\Models\Contract::findOrFail($data['contract_id']);
                 $data['staff_id'] = $contract->staff_id;
+
+                // Validate available funds if recoverable
+                $isRecoverable = $data['is_recoverable'] ?? $expense->is_recoverable;
+                if ($isRecoverable) {
+                    $newAmount = $data['amount'] ?? $expense->amount;
+                    
+                    $adjustmentsPaidSum = (float) $contract->adjustments()->sum('paid_amount');
+                    // Get total excluding current expense if it was already recoverable
+                    $recoverableExpenseTotal = (float) $contract->expenses()
+                        ->where('is_recoverable', true)
+                        ->where('id', '!=', $expense->id)
+                        ->sum('amount');
+                    
+                    $availableBalance = $adjustmentsPaidSum - $recoverableExpenseTotal;
+
+                    if ($newAmount > $availableBalance) {
+                        return response()->json([
+                            'message' => 'Validation error',
+                            'errors' => [
+                                'amount' => ["Amount exceeds available personal funds (Available: QAR " . number_format($availableBalance, 2) . ")"]
+                            ]
+                        ], 422);
+                    }
+                }
             }
 
             if (array_key_exists('contract_id', $data) && empty($data['contract_id'])) {

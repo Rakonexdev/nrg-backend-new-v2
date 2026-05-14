@@ -80,6 +80,7 @@ class ReportController extends Controller
                 'contract_payments.notes',
                 DB::raw("'income' as type"),
                 'staff.name as staff_name',
+                'staff.qid_number as staff_qid',
                 'companies.name as company_name',
                 'contract_payments.created_at'
             );
@@ -100,6 +101,7 @@ class ReportController extends Controller
                 DB::raw("CONCAT(COALESCE(expense_categories.name, 'Expense'), ': ', COALESCE(expenses.description, '')) as notes"),
                 DB::raw("'expenditure' as type"),
                 'staff.name as staff_name',
+                'staff.qid_number as staff_qid',
                 'companies.name as company_name',
                 'expenses.created_at'
             );
@@ -122,7 +124,8 @@ class ReportController extends Controller
                   ->orWhere('type', 'like', "%{$search}%")
                   ->orWhere('payment_method', 'like', "%{$search}%")
                   ->orWhere('notes', 'like', "%{$search}%")
-                  ->orWhere('amount', 'like', "%{$search}%");
+                  ->orWhere('amount', 'like', "%{$search}%")
+                  ->orWhere('staff_qid', 'like', "%{$search}%");
             });
         }
 
@@ -286,4 +289,164 @@ class ReportController extends Controller
         ]);
     }
 
+    /**
+     * Export Collections Report to Excel (CSV)
+     */
+    public function exportCollections(Request $request)
+    {
+        $query = \App\Models\ContractPayment::with(['contract.staff.company', 'creator']);
+
+        if ($request->from_date) {
+            $query->whereDate('payment_date', '>=', $request->from_date);
+        }
+
+        if ($request->to_date) {
+            $query->whereDate('payment_date', '<=', $request->to_date);
+        }
+
+        if ($request->search) {
+            $query->where(function($q) use ($request) {
+                $q->whereHas('contract.staff', function($sq) use ($request) {
+                    $sq->where('name', 'like', "%{$request->search}%");
+                })->orWhereHas('contract.staff.company', function($cq) use ($request) {
+                    $cq->where('name', 'like', "%{$request->search}%");
+                });
+            });
+        }
+
+        $collections = $query->orderBy('payment_date', 'desc')->orderBy('id', 'desc')->get();
+
+        $filename = "Collections_Report_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $columns = ['Date', 'Staff Name', 'Company', 'Payment Method', 'Amount', 'Recorded By'];
+
+        $callback = function () use ($collections, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($collections as $row) {
+                fputcsv($file, [
+                    $row->payment_date ? $row->payment_date->format('d M Y') : 'N/A',
+                    $row->contract->staff->name ?? 'N/A',
+                    $row->contract->staff->company->name ?? 'Individual',
+                    strtoupper(str_replace('_', ' ', $row->payment_method ?? '')),
+                    $row->amount,
+                    $row->creator->name ?? 'System'
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export Income vs Expenditure Report to Excel (CSV)
+     */
+    public function exportIncomeExpenditure(Request $request)
+    {
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+        $search = $request->search;
+
+        // Income (Contract Payments)
+        $incomeQuery = DB::table('contract_payments')
+            ->join('contracts', 'contract_payments.contract_id', '=', 'contracts.id')
+            ->join('staff', 'contracts.staff_id', '=', 'staff.id')
+            ->leftJoin('companies', 'staff.company_id', '=', 'companies.id')
+            ->select(
+                'contract_payments.amount',
+                'contract_payments.payment_date as date',
+                'contract_payments.payment_method',
+                'contract_payments.notes',
+                DB::raw("'income' as type"),
+                'staff.name as staff_name',
+                'staff.qid_number as staff_qid',
+                'companies.name as company_name',
+                'contract_payments.created_at'
+            );
+
+        if ($fromDate) $incomeQuery->whereDate('contract_payments.payment_date', '>=', $fromDate);
+        if ($toDate) $incomeQuery->whereDate('contract_payments.payment_date', '<=', $toDate);
+
+        // Expenditure (Expenses)
+        $expenseQuery = DB::table('expenses')
+            ->leftJoin('expense_categories', 'expenses.category_id', '=', 'expense_categories.id')
+            ->leftJoin('staff', 'expenses.staff_id', '=', 'staff.id')
+            ->leftJoin('companies', 'staff.company_id', '=', 'companies.id')
+            ->select(
+                'expenses.amount',
+                'expenses.expense_date as date',
+                'expenses.payment_method',
+                DB::raw("CONCAT(COALESCE(expense_categories.name, 'Expense'), ': ', COALESCE(expenses.description, '')) as notes"),
+                DB::raw("'expenditure' as type"),
+                'staff.name as staff_name',
+                'staff.qid_number as staff_qid',
+                'companies.name as company_name',
+                'expenses.created_at'
+            );
+
+        if ($fromDate) $expenseQuery->whereDate('expenses.expense_date', '>=', $fromDate);
+        if ($toDate) $expenseQuery->whereDate('expenses.expense_date', '<=', $toDate);
+
+        $unionSub = $incomeQuery->unionAll($expenseQuery);
+        $outer = DB::query()->fromSub($unionSub, 'records')
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc');
+
+        if ($search) {
+            $outer->where(function($q) use ($search) {
+                $q->where('staff_name', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%")
+                  ->orWhere('type', 'like', "%{$search}%")
+                  ->orWhere('payment_method', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%")
+                  ->orWhere('amount', 'like', "%{$search}%")
+                  ->orWhere('staff_qid', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->type) $outer->where('type', $request->type);
+        if ($request->method) $outer->where('payment_method', $request->method);
+
+        $records = $outer->get();
+
+        $filename = "Income_Expenditure_Report_" . date('Y-m-d') . ".csv";
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $columns = ['Date', 'Type', 'Staff / Company', 'QID', 'Amount', 'Method', 'Description'];
+
+        $callback = function () use ($records, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($records as $row) {
+                fputcsv($file, [
+                    date('d M Y', strtotime($row->date)),
+                    ucfirst($row->type),
+                    $row->staff_name . ($row->company_name ? " ({$row->company_name})" : ""),
+                    $row->staff_qid ?? 'N/A',
+                    $row->amount,
+                    strtoupper(str_replace('_', ' ', $row->payment_method ?? '')),
+                    $row->notes
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }
