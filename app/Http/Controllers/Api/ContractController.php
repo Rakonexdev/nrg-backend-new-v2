@@ -99,12 +99,37 @@ class ContractController extends Controller implements HasMiddleware
             $query->where('staff_id', $request->get('staff_id'));
         }
 
-        if ($request->filled('from_date')) {
-            $query->whereDate('contract_date', '>=', $request->get('from_date'));
-        }
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
 
-        if ($request->filled('to_date')) {
-            $query->whereDate('contract_date', '<=', $request->get('to_date'));
+        if ($fromDate || $toDate) {
+            $query->where(function ($dateQuery) use ($fromDate, $toDate) {
+                $applyDateRange = function ($builder, string $column) use ($fromDate, $toDate) {
+                    if ($fromDate) {
+                        $builder->whereDate($column, '>=', $fromDate);
+                    }
+
+                    if ($toDate) {
+                        $builder->whereDate($column, '<=', $toDate);
+                    }
+                };
+
+                $dateQuery->where(function ($contractDateQuery) use ($applyDateRange) {
+                    $applyDateRange($contractDateQuery, 'contract_date');
+                })->orWhereHas('payments', function ($paymentQuery) use ($applyDateRange) {
+                    $paymentQuery->whereNull('contract_adjustment_id')
+                        ->whereNotNull('next_payment_date')
+                        ->where(function ($paymentDateQuery) use ($applyDateRange) {
+                            $applyDateRange($paymentDateQuery, 'next_payment_date');
+                        });
+                })->orWhereHas('adjustments', function ($adjustmentQuery) use ($applyDateRange) {
+                    $adjustmentQuery->where('pending_amount', '>', 0)
+                        ->whereNotNull('next_payment_date')
+                        ->where(function ($adjustmentDateQuery) use ($applyDateRange) {
+                            $applyDateRange($adjustmentDateQuery, 'next_payment_date');
+                        });
+                });
+            });
         }
 
         $sortColumn = $request->get('sort_by', 'created_at');
