@@ -22,6 +22,8 @@ class ContractPaymentResource extends JsonResource
             'settlement' => $this->whenLoaded('settlement'),
             'contract_adjustment_id' => $this->contract_adjustment_id,
             'created_by' => $this->created_by,
+            'recorded_by' => $this->creator ? $this->creator->name : 'N/A',
+            'recorded_by_role' => $this->creator ? ($this->creator->role === 'super_admin' ? 'Super Admin' : ($this->creator->role === 'admin' ? 'Admin' : $this->creator->role)) : null,
             'created_at' => $this->created_at,
         ];
     }

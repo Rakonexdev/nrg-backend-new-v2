@@ -14,9 +14,14 @@ class GeneralDocument extends Model
     protected $fillable = [
         'document_name',
         'category',
+        'expiry_date',
         'file_path',
         'file_name',
         'uploaded_by'
+    ];
+
+    protected $casts = [
+        'expiry_date' => 'date',
     ];
 
     public function uploader(): BelongsTo

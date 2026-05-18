@@ -19,7 +19,8 @@ class Contract extends Model
         'health_card_fee',
         'others_fee',
         'others_reason',
-        'contract_date'
+        'contract_date',
+        'notes'
     ];
 
     protected $casts = [

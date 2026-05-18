@@ -16,7 +16,7 @@ class ReportController extends Controller
      */
     public function collectionsReport(Request $request)
     {
-        $query = \App\Models\ContractPayment::with(['contract.staff.company', 'creator']);
+        $query = \App\Models\ContractPayment::with(['contract.staff.company', 'creator.roles']);
 
         if ($request->from_date) {
             $query->whereDate('payment_date', '>=', $request->from_date);
@@ -39,6 +39,17 @@ class ReportController extends Controller
         $collections = $query->orderBy('payment_date', 'desc')
             ->orderBy('id', 'desc')
             ->paginate($request->per_page ?? 15);
+
+        // Calculate adjustment_pending for each collection's contract & load creator roles
+        $collections->getCollection()->transform(function ($payment) {
+            if ($payment->contract) {
+                $payment->contract->adjustment_pending = (float)$payment->contract->adjustments()->sum('pending_amount');
+            }
+            if ($payment->creator) {
+                $payment->creator->role = $payment->creator->role;
+            }
+            return $payment;
+        });
 
         // Summary for the filtered range
         $totalCollected = (clone $query)->sum('amount');
@@ -294,7 +305,7 @@ class ReportController extends Controller
      */
     public function exportCollections(Request $request)
     {
-        $query = \App\Models\ContractPayment::with(['contract.staff.company', 'creator']);
+        $query = \App\Models\ContractPayment::with(['contract.staff.company', 'creator.roles']);
 
         if ($request->from_date) {
             $query->whereDate('payment_date', '>=', $request->from_date);
@@ -332,13 +343,15 @@ class ReportController extends Controller
             fputcsv($file, $columns);
 
             foreach ($collections as $row) {
+                $role = $row->creator ? ($row->creator->role === 'super_admin' ? 'Super Admin' : ($row->creator->role === 'admin' ? 'Admin' : $row->creator->role)) : null;
+                $recordedByStr = $row->creator ? $row->creator->name . ($role ? " ($role)" : "") : 'System';
                 fputcsv($file, [
                     $row->payment_date ? $row->payment_date->format('d M Y') : 'N/A',
                     $row->contract->staff->name ?? 'N/A',
                     $row->contract->staff->company->name ?? 'Individual',
                     strtoupper(str_replace('_', ' ', $row->payment_method ?? '')),
                     $row->amount,
-                    $row->creator->name ?? 'System'
+                    $recordedByStr
                 ]);
             }
             fclose($file);

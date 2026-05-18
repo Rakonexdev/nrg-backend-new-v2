@@ -16,7 +16,7 @@ class ContractController extends Controller implements HasMiddleware
         return [
             new Middleware('permission:view_contracts', only: ['index', 'show', 'summary']),
             new Middleware('permission:contract_create', only: ['store']),
-            new Middleware('permission:contract_edit', only: ['update', 'addAdjustment']),
+            new Middleware('permission:contract_edit', only: ['update', 'addAdjustment', 'updateAdjustment', 'updateNextDueDate']),
             new Middleware('permission:contract_delete', only: ['destroy']),
         ];
     }
@@ -60,7 +60,7 @@ class ContractController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Contract::with(['staff.company', 'staff.branch', 'adjustments'])
+        $query = Contract::with(['staff.company', 'staff.branch', 'adjustments.creator.roles'])
             ->withSum([
                 'expenses as expense_total' => function ($q) {
                     $q->where('is_recoverable', false);
@@ -93,6 +93,12 @@ class ContractController extends Controller implements HasMiddleware
 
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->get('payment_status'));
+        }
+
+        if ($request->filled('company_id')) {
+            $query->whereHas('staff', function ($q) use ($request) {
+                $q->where('company_id', $request->get('company_id'));
+            });
         }
 
         if ($request->filled('staff_id')) {
@@ -165,13 +171,14 @@ class ContractController extends Controller implements HasMiddleware
             'health_card_fee' => 'nullable|numeric|min:0',
             'others_fee' => 'nullable|numeric|min:0',
             'others_reason' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
         $data['total_income'] = (float) ($data['total_income'] ?? 0);
 
 
         $entity = Contract::create($data);
         $entity->syncPaymentTracking();
-        return new ContractResource($entity->load(['staff', 'payments', 'expenses'])
+        return new ContractResource($entity->load(['staff', 'payments.creator.roles', 'expenses'])
             ->loadSum([
                 'expenses as expense_total' => function ($q) {
                     $q->where('is_recoverable', false);
@@ -182,7 +189,7 @@ class ContractController extends Controller implements HasMiddleware
     public function show($id)
     {
         return new ContractResource(
-            Contract::with(['staff.company', 'staff.branch', 'payments.settlement', 'expenses', 'adjustments'])
+            Contract::with(['staff.company', 'staff.branch', 'payments.settlement', 'payments.creator.roles', 'expenses', 'adjustments.creator.roles'])
                 ->withSum([
                     'expenses as expense_total' => function ($q) {
                         $q->where('is_recoverable', false);
@@ -211,6 +218,7 @@ class ContractController extends Controller implements HasMiddleware
             'health_card_fee' => 'nullable|numeric|min:0',
             'others_fee' => 'nullable|numeric|min:0',
             'others_reason' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
         $data['total_income'] = (float) ($data['total_income'] ?? $entity->total_income ?? 0);
 
@@ -227,7 +235,7 @@ class ContractController extends Controller implements HasMiddleware
 
         $entity->update($data);
         $entity->syncPaymentTracking();
-        return new ContractResource($entity->load(['staff', 'payments', 'expenses'])
+        return new ContractResource($entity->load(['staff', 'payments.creator.roles', 'expenses'])
             ->loadSum([
                 'expenses as expense_total' => function ($q) {
                     $q->where('is_recoverable', false);
@@ -275,7 +283,113 @@ class ContractController extends Controller implements HasMiddleware
 
         $contract->syncPaymentTracking();
 
-        return new ContractResource($contract->load(['staff', 'payments', 'expenses', 'adjustments'])
+        return new ContractResource($contract->load(['staff', 'payments.creator.roles', 'expenses', 'adjustments.creator.roles'])
+            ->loadSum([
+                'expenses as expense_total' => function ($q) {
+                    $q->where('is_recoverable', false);
+                }
+            ], 'amount'));
+    }
+
+    public function updateAdjustment(Request $request, $id, $adjustmentId)
+    {
+        $contract = Contract::findOrFail($id);
+        $adjustment = $contract->adjustments()->findOrFail($adjustmentId);
+
+        $data = $request->validate([
+            'next_payment_date' => 'nullable|date',
+            'amount' => 'nullable|numeric|min:0.01',
+            'reason' => 'nullable|string|max:255',
+            'adjustment_date' => 'nullable|date',
+        ]);
+
+        if (array_key_exists('next_payment_date', $data)) {
+            $adjustment->next_payment_date = $data['next_payment_date'];
+        }
+        if (isset($data['amount'])) {
+            $adjustment->amount = (float)$data['amount'];
+        }
+        if (isset($data['reason'])) {
+            $adjustment->reason = $data['reason'];
+        }
+        if (isset($data['adjustment_date'])) {
+            $adjustment->adjustment_date = $data['adjustment_date'];
+        }
+
+        $adjustment->save();
+
+        // Re-sync paid/pending amounts of the adjustment
+        $paid = (float) $adjustment->payments()->sum('amount');
+        $adjustment->update([
+            'paid_amount' => $paid,
+            'pending_amount' => round((float)$adjustment->amount - $paid, 2),
+        ]);
+
+        $contract->syncPaymentTracking();
+
+        return new ContractResource($contract->load(['staff', 'payments.creator.roles', 'expenses', 'adjustments.creator.roles'])
+            ->loadSum([
+                'expenses as expense_total' => function ($q) {
+                    $q->where('is_recoverable', false);
+                }
+            ], 'amount'));
+    }
+
+    public function updateNextDueDate(Request $request, $id)
+    {
+        $contract = Contract::findOrFail($id);
+
+        $data = $request->validate([
+            'type' => 'required|in:collection,personal',
+            'next_payment_date' => 'nullable|date',
+        ]);
+
+        $nextDate = $data['next_payment_date'] ?? null;
+
+        if ($data['type'] === 'collection') {
+            // Find the latest regular (non-adjustment) payment
+            $latestPayment = $contract->payments()->whereNull('contract_adjustment_id')->first();
+            if ($latestPayment) {
+                $latestPayment->update([
+                    'next_payment_date' => $nextDate
+                ]);
+            } else {
+                // Create a placeholder payment with 0 amount to hold the next_payment_date
+                $contract->payments()->create([
+                    'amount' => 0,
+                    'payment_date' => now()->format('Y-m-d'),
+                    'payment_method' => 'Cash',
+                    'subcategory' => 'Monthly Installment',
+                    'notes' => 'Next payment date scheduled',
+                    'next_payment_date' => $nextDate,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+        } else {
+            // Find the latest pending adjustment
+            $latestAdjustment = $contract->adjustments()->where('pending_amount', '>', 0)->first();
+            if ($latestAdjustment) {
+                $latestAdjustment->update([
+                    'next_payment_date' => $nextDate
+                ]);
+            } else {
+                // If there are no pending adjustments, find the latest adjustment
+                $latestAdjustment = $contract->adjustments()->first();
+                if ($latestAdjustment) {
+                    $latestAdjustment->update([
+                        'next_payment_date' => $nextDate
+                    ]);
+                } else {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'next_payment_date' => ['Cannot update Personal Due date because no Personal Due entry exists for this contract.'],
+                    ]);
+                }
+            }
+        }
+
+        $contract->syncPaymentTracking();
+
+        return new ContractResource($contract->load(['staff', 'payments.creator.roles', 'expenses', 'adjustments.creator.roles'])
             ->loadSum([
                 'expenses as expense_total' => function ($q) {
                     $q->where('is_recoverable', false);

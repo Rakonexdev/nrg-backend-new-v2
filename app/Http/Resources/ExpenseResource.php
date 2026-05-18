@@ -24,6 +24,7 @@ class ExpenseResource extends JsonResource
             ],
             'vendor_name' => $this->vendor_name,
             'is_recoverable' => (bool) $this->is_recoverable,
+            'notes' => $this->notes,
             'staff' => $this->staff ? [
                 'id' => $this->staff->id,
                 'name' => $this->staff->name,

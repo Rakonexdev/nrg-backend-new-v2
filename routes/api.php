@@ -40,8 +40,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
     Route::apiResource('contracts', ContractController::class);
     Route::post('/contracts/{id}/adjustments', [ContractController::class, 'addAdjustment']);
+    Route::put('/contracts/{id}/adjustments/{adjustment_id}', [ContractController::class, 'updateAdjustment']);
+    Route::put('/contracts/{id}/next-due-date', [ContractController::class, 'updateNextDueDate']);
     Route::get('/contracts/{contract}/payments', [ContractPaymentController::class, 'index']);
     Route::post('/contracts/{contract}/payments', [ContractPaymentController::class, 'store']);
+    Route::put('/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'update']);
     Route::delete('/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'destroy']);
     Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show', 'update']);
 

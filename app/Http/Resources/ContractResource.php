@@ -49,6 +49,7 @@ class ContractResource extends JsonResource
             'health_card_fee' => (float) $this->health_card_fee,
             'others_fee' => (float) $this->others_fee,
             'others_reason' => $this->others_reason,
+            'notes' => $this->notes,
             'expense_total' => (float) ($nonRecoverableExpenseTotal + $operationalFees),
             'profit_amount' => (float) ($this->paid_amount + $netAdjustments) - (float) ($nonRecoverableExpenseTotal + $operationalFees),
             'gross_income' => (float) ($this->paid_amount + $netAdjustments),
@@ -75,6 +76,8 @@ class ContractResource extends JsonResource
                         'reason' => $adj->reason,
                         'adjustment_date' => $adj->adjustment_date ? $adj->adjustment_date->format('Y-m-d') : null,
                         'next_payment_date' => $adj->next_payment_date ? $adj->next_payment_date->format('Y-m-d') : null,
+                        'recorded_by' => $adj->creator ? $adj->creator->name : 'N/A',
+                        'recorded_by_role' => $adj->creator ? ($adj->creator->role === 'super_admin' ? 'Super Admin' : ($adj->creator->role === 'admin' ? 'Admin' : $adj->creator->role)) : null,
                         'created_at' => $adj->created_at,
                     ];
                 });

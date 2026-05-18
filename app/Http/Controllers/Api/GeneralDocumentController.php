@@ -48,6 +48,7 @@ class GeneralDocumentController extends Controller implements HasMiddleware
         $request->validate([
             'document_name' => 'required|string|max:255',
             'category' => 'required|in:company,other',
+            'expiry_date' => 'nullable|date',
             'file' => 'required|file|max:10240', // Max 10MB
         ]);
 
@@ -57,6 +58,7 @@ class GeneralDocumentController extends Controller implements HasMiddleware
         $document = GeneralDocument::create([
             'document_name' => $request->document_name,
             'category' => $request->category,
+            'expiry_date' => $request->expiry_date,
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
             'uploaded_by' => $request->user()->id
@@ -84,12 +86,14 @@ class GeneralDocumentController extends Controller implements HasMiddleware
         try {
             $request->validate([
                 'document_name' => 'required|string|max:255',
+                'expiry_date' => 'nullable|date',
                 'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240'
             ]);
 
             $document = GeneralDocument::findOrFail($id);
             $data = [
-                'document_name' => $request->document_name
+                'document_name' => $request->document_name,
+                'expiry_date' => $request->expiry_date
             ];
 
             if ($request->hasFile('file')) {
