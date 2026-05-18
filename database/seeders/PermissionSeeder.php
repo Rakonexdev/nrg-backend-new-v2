@@ -27,6 +27,18 @@ class PermissionSeeder extends Seeder
             'view_reports',
             'view_collectors',
             'view_role_access',
+            
+            // Dashboard card permissions
+            'dashboard_total_staff',
+            'dashboard_qid_expiry',
+            'dashboard_passport_expiry',
+            'dashboard_renewing_this_month',
+            'dashboard_doc_status',
+            'dashboard_total_collected',
+            'dashboard_pending_collection',
+            'dashboard_contract_profit',
+            'dashboard_recent_collections',
+            'dashboard_upcoming_expirations',
 
             // Action permissions — Staff
             'staff_create',
@@ -86,6 +98,16 @@ class PermissionSeeder extends Seeder
         // Sync permissions for admin (overwriting or merging based on preference, here we sync the standard set)
         $adminRole->syncPermissions([
             'view_dashboard',
+            'dashboard_total_staff',
+            'dashboard_qid_expiry',
+            'dashboard_passport_expiry',
+            'dashboard_renewing_this_month',
+            'dashboard_doc_status',
+            'dashboard_total_collected',
+            'dashboard_pending_collection',
+            'dashboard_contract_profit',
+            'dashboard_recent_collections',
+            'dashboard_upcoming_expirations',
             'view_staff',
             'view_companies',
             'view_contracts',

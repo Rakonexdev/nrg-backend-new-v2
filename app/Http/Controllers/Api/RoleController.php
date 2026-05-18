@@ -51,6 +51,11 @@ class RoleController extends Controller
                 'description' => 'Control which side menu items are visible',
                 'permissions' => []
             ],
+            'dashboard' => [
+                'label' => 'Dashboard Visibility',
+                'description' => 'Control which dashboard cards are visible',
+                'permissions' => []
+            ],
             'staff' => [
                 'label' => 'Staff Management',
                 'description' => 'Control staff CRUD operations',
@@ -98,6 +103,12 @@ class RoleController extends Controller
             // Priority 2: Menu Visibility
             if (str_starts_with($perm, 'view_')) {
                 $grouped['menu']['permissions'][] = $perm;
+                continue;
+            }
+
+            // Dashboard Cards
+            if (str_starts_with($perm, 'dashboard_')) {
+                $grouped['dashboard']['permissions'][] = $perm;
                 continue;
             }
 
