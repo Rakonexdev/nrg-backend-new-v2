@@ -28,8 +28,8 @@ class StaffResource extends JsonResource
             'company_name' => $this->company ? $this->company->name : 'N/A',
             'branch_id' => $this->branch_id,
             'branch' => $this->branch,
-            'branch_name' => $this->branch ? $this->branch->name : 'Main',
-            'branch_number' => $this->branch ? $this->branch->branch_number : null,
+            'branch_name' => $this->branch ? $this->branch->name : ($this->company ? ($this->company->branch_name ?: 'Main') : 'Main'),
+            'branch_number' => $this->branch ? $this->branch->branch_number : ($this->company ? $this->company->branch_number : null),
             'status' => $this->status,
             'notes' => $this->notes,
             'qid_documents' => $this->documents->where('document_type', 'qid')->map(function ($doc) {

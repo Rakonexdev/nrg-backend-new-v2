@@ -42,7 +42,7 @@ class CompanyController extends Controller implements HasMiddleware
 
         // Simple mode for dropdowns
         if ($request->get('mode') === 'simple') {
-            return response()->json($query->select('id', 'name')->orderBy('name')->get());
+            return response()->json($query->select('id', 'name', 'branch_number')->orderBy('name')->get());
         }
 
         // Pagination/All

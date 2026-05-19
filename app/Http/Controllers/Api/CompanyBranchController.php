@@ -15,7 +15,7 @@ class CompanyBranchController extends Controller
         
         // Auto-sync company's primary branch info into the branches table if it's missing
         // Use company name as default branch name if branch_name is not explicitly set
-        if ($company->branch_number || $company->branch_name) {
+        if (($company->branch_number !== null && $company->branch_number !== '') || ($company->branch_name !== null && $company->branch_name !== '')) {
             CompanyBranch::firstOrCreate(
                 ['company_id' => $company->id, 'name' => $company->branch_name ?: $company->name],
                 [

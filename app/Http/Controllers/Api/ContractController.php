@@ -298,16 +298,17 @@ class ContractController extends Controller implements HasMiddleware
 
         $data = $request->validate([
             'next_payment_date' => 'nullable|date',
-            'amount' => 'nullable|numeric|min:0.01',
-            'reason' => 'nullable|string|max:255',
-            'adjustment_date' => 'nullable|date',
+            'amount'            => 'nullable|numeric|min:0.01',
+            'paid_amount'       => 'nullable|numeric|min:0',
+            'reason'            => 'nullable|string|max:255',
+            'adjustment_date'   => 'nullable|date',
         ]);
 
         if (array_key_exists('next_payment_date', $data)) {
             $adjustment->next_payment_date = $data['next_payment_date'];
         }
         if (isset($data['amount'])) {
-            $adjustment->amount = (float)$data['amount'];
+            $adjustment->amount = (float) $data['amount'];
         }
         if (isset($data['reason'])) {
             $adjustment->reason = $data['reason'];
@@ -315,14 +316,67 @@ class ContractController extends Controller implements HasMiddleware
         if (isset($data['adjustment_date'])) {
             $adjustment->adjustment_date = $data['adjustment_date'];
         }
-
         $adjustment->save();
 
-        // Re-sync paid/pending amounts of the adjustment
-        $paid = (float) $adjustment->payments()->sum('amount');
+        $totalAmount = (float) $adjustment->amount;
+
+        // Determine new paid total
+        if (array_key_exists('paid_amount', $data) && $data['paid_amount'] !== null) {
+            $newPaid = round((float) $data['paid_amount'], 2);
+
+            if ($newPaid > $totalAmount) {
+                return response()->json([
+                    'message' => 'Paid amount cannot exceed the total adjustment amount.'
+                ], 422);
+            }
+
+            // Sync ContractPayment records so the Payments History table reflects the change.
+            $existingPaidSum = round((float) $adjustment->payments()->sum('amount'), 2);
+            $delta = round($newPaid - $existingPaidSum, 2);
+
+            if ($delta > 0) {
+                // Extra amount paid — add a new payment record for the delta
+                $paymentDate = isset($data['adjustment_date'])
+                    ? $data['adjustment_date']
+                    : ($adjustment->adjustment_date
+                        ? $adjustment->adjustment_date->format('Y-m-d')
+                        : now()->format('Y-m-d'));
+
+                $contract->payments()->create([
+                    'amount'                 => $delta,
+                    'payment_date'           => $paymentDate,
+                    'payment_method'         => 'Cash',
+                    'subcategory'            => $adjustment->reason,
+                    'contract_adjustment_id' => $adjustment->id,
+                    'created_by'             => auth()->id(),
+                ]);
+            } elseif ($delta < 0) {
+                // Amount reduced — remove payment records newest-first until delta is satisfied
+                $toRemove = abs($delta);
+                $paymentsDesc = $adjustment->payments()->orderByDesc('payment_date')->orderByDesc('id')->get();
+                foreach ($paymentsDesc as $pmt) {
+                    if ($toRemove <= 0) break;
+                    $pmtAmount = (float) $pmt->amount;
+                    if ($pmtAmount <= $toRemove) {
+                        $toRemove -= $pmtAmount;
+                        $pmt->delete();
+                    } else {
+                        $pmt->update(['amount' => round($pmtAmount - $toRemove, 2)]);
+                        $toRemove = 0;
+                    }
+                }
+            }
+
+            // Re-calculate paid from actual payment records after sync
+            $paid = round((float) $adjustment->payments()->sum('amount'), 2);
+        } else {
+            // No paid_amount supplied — derive from actual payment records
+            $paid = round((float) $adjustment->payments()->sum('amount'), 2);
+        }
+
         $adjustment->update([
-            'paid_amount' => $paid,
-            'pending_amount' => round((float)$adjustment->amount - $paid, 2),
+            'paid_amount'   => $paid,
+            'pending_amount' => round($totalAmount - $paid, 2),
         ]);
 
         $contract->syncPaymentTracking();

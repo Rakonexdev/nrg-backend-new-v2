@@ -27,7 +27,7 @@ class PermissionSeeder extends Seeder
             'view_reports',
             'view_collectors',
             'view_role_access',
-            
+
             // Dashboard card permissions
             'dashboard_total_staff',
             'dashboard_qid_expiry',
@@ -44,11 +44,13 @@ class PermissionSeeder extends Seeder
             'staff_create',
             'staff_edit',
             'staff_status',
+            'staff_delete',
 
             // Action permissions — Companies
             'company_create',
             'company_edit',
             'company_delete',
+            'company_status',
 
             // Action permissions — Contracts
             'contract_create',
@@ -94,7 +96,7 @@ class PermissionSeeder extends Seeder
 
         // Admin role — create with default view-only permissions
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        
+
         // Sync permissions for admin (overwriting or merging based on preference, here we sync the standard set)
         $adminRole->syncPermissions([
             'view_dashboard',
@@ -115,6 +117,8 @@ class PermissionSeeder extends Seeder
             'view_settlements',
             'view_reports',
             'view_collectors',
+            'staff_delete',
+            'company_status',
             'report_doc_status_edit',
             'view_documentation',
             'documentation_create',
@@ -136,7 +140,7 @@ class PermissionSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        
+
         if (!$admin->hasRole('super_admin')) {
             $admin->assignRole('super_admin');
         }
