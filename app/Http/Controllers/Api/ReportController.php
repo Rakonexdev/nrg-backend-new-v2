@@ -48,6 +48,8 @@ class ReportController extends Controller
             if ($payment->creator) {
                 $payment->creator->role = $payment->creator->role;
             }
+            // Ensure created_at is always exposed as ISO string for frontend time display
+            $payment->recorded_at = $payment->created_at ? $payment->created_at->toIso8601String() : null;
             return $payment;
         });
 
@@ -149,6 +151,17 @@ class ReportController extends Controller
         }
 
         $paginated = $outer->paginate($perPage);
+
+        // Convert the database UTC created_at timestamp to ISO 8601 string for frontend local timezone conversion
+        $paginated->getCollection()->transform(function ($item) {
+            if (!empty($item->created_at)) {
+                $item->recorded_at = \Carbon\Carbon::parse($item->created_at)->toIso8601String();
+            } else {
+                $item->recorded_at = null;
+            }
+            return $item;
+        });
+
 
         // Totals for the filtered range
         $totalIncome = DB::table('contract_payments')
