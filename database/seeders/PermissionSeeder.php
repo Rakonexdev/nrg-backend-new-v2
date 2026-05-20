@@ -56,6 +56,10 @@ class PermissionSeeder extends Seeder
             'contract_create',
             'contract_edit',
             'contract_delete',
+            'contract_card_total_collected',
+            'contract_card_pending_collection',
+            'contract_card_contract_profit',
+            'contract_card_general_overheads',
 
             // Action permissions — Expenses
             'expense_create',
@@ -113,6 +117,10 @@ class PermissionSeeder extends Seeder
             'view_staff',
             'view_companies',
             'view_contracts',
+            'contract_card_total_collected',
+            'contract_card_pending_collection',
+            'contract_card_contract_profit',
+            'contract_card_general_overheads',
             'view_expenses',
             'view_settlements',
             'view_reports',
