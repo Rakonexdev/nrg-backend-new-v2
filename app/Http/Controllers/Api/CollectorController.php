@@ -54,6 +54,7 @@ class CollectorController extends Controller implements HasMiddleware
             'mobile' => 'required|string|max:20',
         ]);
 
+        $validated['raw_password'] = $validated['password'];
         $validated['password'] = Hash::make($validated['password']);
         $validated['is_active'] = true;
 
@@ -85,6 +86,7 @@ class CollectorController extends Controller implements HasMiddleware
             if (!Hash::check($request->old_password, $user->password)) {
                 return response()->json(['message' => 'Old password does not match.'], 400);
             }
+            $validated['raw_password'] = $validated['password'];
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);

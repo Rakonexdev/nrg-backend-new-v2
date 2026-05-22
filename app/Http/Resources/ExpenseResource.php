@@ -29,6 +29,8 @@ class ExpenseResource extends JsonResource
                 'id' => $this->staff->id,
                 'name' => $this->staff->name,
             ] : null,
+            'recorded_by' => $this->recorder ? $this->recorder->name : null,
+            'recorded_by_role' => $this->recorder ? $this->recorder->role : null,
         ];
     }
 }
