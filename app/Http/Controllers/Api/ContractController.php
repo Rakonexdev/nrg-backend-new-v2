@@ -60,7 +60,7 @@ class ContractController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Contract::with(['staff.company', 'staff.branch', 'adjustments.creator.roles'])
+        $query = Contract::with(['staff.company', 'staff.branch', 'adjustments.creator.roles', 'latestCompanyPayment', 'latestPersonalPayment'])
             ->withSum([
                 'expenses as expense_total' => function ($q) {
                     $q->where('is_recoverable', false);

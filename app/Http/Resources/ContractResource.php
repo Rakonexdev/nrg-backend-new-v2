@@ -63,6 +63,8 @@ class ContractResource extends JsonResource
                 : $this->payments()->whereNull('contract_adjustment_id')->where('next_payment_date', '!=', null)->max('next_payment_date'),
             'payment_status' => $this->payment_status,
             'payment_type' => $this->payment_type,
+            'latest_company_payment' => new ContractPaymentResource($this->whenLoaded('latestCompanyPayment')),
+            'latest_personal_payment' => new ContractPaymentResource($this->whenLoaded('latestPersonalPayment')),
             'payments' => ContractPaymentResource::collection($this->whenLoaded('payments')),
             'daily_expenses' => ExpenseResource::collection($this->whenLoaded('expenses')),
             'recoverable_expenses' => ExpenseResource::collection($this->expenses()->where('is_recoverable', true)->get()),

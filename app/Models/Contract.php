@@ -65,6 +65,16 @@ class Contract extends Model
         return $this->hasMany(ContractAdjustment::class)->latest('adjustment_date')->latest();
     }
 
+    public function latestCompanyPayment()
+    {
+        return $this->hasOne(ContractPayment::class)->whereNull('contract_adjustment_id')->latest('payment_date')->latest('id');
+    }
+
+    public function latestPersonalPayment()
+    {
+        return $this->hasOne(ContractPayment::class)->whereNotNull('contract_adjustment_id')->latest('payment_date')->latest('id');
+    }
+
     public function getNetIncomeAttribute()
     {
         return round((float) $this->total_income + (float) $this->adjustments()->sum('amount'), 2);
