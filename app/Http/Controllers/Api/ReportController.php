@@ -29,7 +29,8 @@ class ReportController extends Controller
         if ($request->search) {
             $query->where(function($q) use ($request) {
                 $q->whereHas('contract.staff', function($sq) use ($request) {
-                    $sq->where('name', 'like', "%{$request->search}%");
+                    $sq->where('name', 'like', "%{$request->search}%")
+                      ->orWhere('qid_number', 'like', "%{$request->search}%");
                 })->orWhereHas('contract.staff.company', function($cq) use ($request) {
                     $cq->where('name', 'like', "%{$request->search}%");
                 });
@@ -331,7 +332,8 @@ class ReportController extends Controller
         if ($request->search) {
             $query->where(function($q) use ($request) {
                 $q->whereHas('contract.staff', function($sq) use ($request) {
-                    $sq->where('name', 'like', "%{$request->search}%");
+                    $sq->where('name', 'like', "%{$request->search}%")
+                      ->orWhere('qid_number', 'like', "%{$request->search}%");
                 })->orWhereHas('contract.staff.company', function($cq) use ($request) {
                     $cq->where('name', 'like', "%{$request->search}%");
                 });

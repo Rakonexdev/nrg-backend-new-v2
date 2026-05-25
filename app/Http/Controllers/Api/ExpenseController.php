@@ -67,6 +67,7 @@ class ExpenseController extends Controller implements HasMiddleware
                 })
                     ->orWhereHas('contract.staff', function ($sq) use ($search) {
                         $sq->where('name', 'like', "%{$search}%")
+                            ->orWhere('qid_number', 'like', "%{$search}%")
                             ->orWhereHas('company', function ($cq) use ($search) {
                                 $cq->where('name', 'like', "%{$search}%");
                             });
