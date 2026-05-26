@@ -351,7 +351,7 @@ class ReportController extends Controller
             "Expires" => "0"
         ];
 
-        $columns = ['Date', 'Staff Name', 'Company', 'Payment Method', 'Amount', 'Recorded By'];
+        $columns = ['Date', 'Staff Name', 'Company', 'Payment Method', 'Amount', 'Recorded By', 'Status'];
 
         $callback = function () use ($collections, $columns) {
             $file = fopen('php://output', 'w');
@@ -366,7 +366,8 @@ class ReportController extends Controller
                     $row->contract->staff->company->name ?? 'Individual',
                     strtoupper(str_replace('_', ' ', $row->payment_method ?? '')),
                     $row->amount,
-                    $recordedByStr
+                    $recordedByStr,
+                    $row->status === 'not_collected' ? 'Not Collected' : 'Amount Collected'
                 ]);
             }
             fclose($file);

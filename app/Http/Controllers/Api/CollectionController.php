@@ -99,4 +99,17 @@ class CollectionController extends Controller
 
         return response()->json($result);
     }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:collected,not_collected'
+        ]);
+
+        $payment = \App\Models\ContractPayment::findOrFail($id);
+        $payment->status = $request->status;
+        $payment->save();
+
+        return response()->json(['message' => 'Status updated successfully', 'payment' => $payment]);
+    }
 }

@@ -295,12 +295,19 @@ class RoleController extends Controller
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
+            'password' => 'sometimes|string|min:8',
             'mobile' => 'nullable|string',
             'role' => 'sometimes|string|exists:roles,name',
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $user->update($request->only(['name', 'email', 'mobile', 'is_active']));
+        $updateData = $request->only(['name', 'email', 'mobile', 'is_active']);
+        
+        if ($request->filled('password')) {
+            $updateData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+        }
+
+        $user->update($updateData);
 
         if ($request->has('role') && $request->role !== 'super_admin') {
             $user->syncRoles([$request->role]);
