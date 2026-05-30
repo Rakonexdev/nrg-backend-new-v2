@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\CollectorController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\GeneralDocumentController;
+use App\Http\Controllers\Api\VehicleController;
+use App\Http\Controllers\Api\VisaApplicationController;
 
 // Public Auth routes
 
@@ -37,6 +39,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/companies/{id}/pending-collections', [CompanyController::class, 'getPendingCollections']);
     Route::apiResource('staff', StaffController::class);
     Route::apiResource('collectors', CollectorController::class);
+    
+    // Vehicles
+    Route::apiResource('vehicles', VehicleController::class);
+    
+    // Visa Applications
+    Route::apiResource('visa-applications', VisaApplicationController::class);
+
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
     Route::apiResource('contracts', ContractController::class);
     Route::post('/contracts/{id}/adjustments', [ContractController::class, 'addAdjustment']);

@@ -91,6 +91,16 @@ class RoleController extends Controller
                 'description' => 'Control documentation uploads and management',
                 'permissions' => []
             ],
+            'vehicles' => [
+                'label' => 'Vehicle Management',
+                'description' => 'Control vehicle CRUD operations',
+                'permissions' => []
+            ],
+            'visa_applications' => [
+                'label' => 'Visa Applications',
+                'description' => 'Control visa application CRUD operations',
+                'permissions' => []
+            ],
         ];
 
         foreach ($permissions as $perm) {
@@ -125,6 +135,10 @@ class RoleController extends Controller
                 $grouped['collectors']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'report_')) {
                 $grouped['reports']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'vehicle_')) {
+                $grouped['vehicles']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'visa_application_')) {
+                $grouped['visa_applications']['permissions'][] = $perm;
             }
         }
 
