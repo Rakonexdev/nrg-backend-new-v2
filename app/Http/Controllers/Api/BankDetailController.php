@@ -8,23 +8,47 @@ use Illuminate\Http\Request;
 
 class BankDetailController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bankDetails = BankDetail::with('company')->get();
+        $perPage = $request->input('per_page', 10);
+        $search = $request->input('search', '');
+
+        $query = BankDetail::with('company');
+
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('bank_name', 'like', "%{$search}%")
+                  ->orWhere('account_number', 'like', "%{$search}%")
+                  ->orWhere('person_name', 'like', "%{$search}%")
+                  ->orWhere('bank_details_for', 'like', "%{$search}%")
+                  ->orWhereHas('company', function($c) use ($search) {
+                      $c->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $bankDetails = $query->latest()->paginate($perPage);
         return response()->json($bankDetails);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'company_id' => 'required|exists:companies,id',
-            'person_name' => 'required|string|max:255',
+            'bank_details_for' => 'required|in:Company,Person',
+            'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
+            'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255',
             'balance' => 'required|numeric',
             'card_type' => 'nullable|string|max:50',
             'updated_date' => 'nullable|date',
         ]);
+
+        if ($validated['bank_details_for'] === 'Company') {
+            $validated['person_name'] = null;
+        } else {
+            $validated['company_id'] = null;
+        }
 
         $bankDetail = BankDetail::create($validated);
         $bankDetail->load('company');
@@ -46,14 +70,21 @@ class BankDetailController extends Controller
         $bankDetail = BankDetail::findOrFail($id);
 
         $validated = $request->validate([
-            'company_id' => 'required|exists:companies,id',
-            'person_name' => 'required|string|max:255',
+            'bank_details_for' => 'required|in:Company,Person',
+            'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
+            'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255',
             'balance' => 'required|numeric',
             'card_type' => 'nullable|string|max:50',
             'updated_date' => 'nullable|date',
         ]);
+
+        if ($validated['bank_details_for'] === 'Company') {
+            $validated['person_name'] = null;
+        } else {
+            $validated['company_id'] = null;
+        }
 
         $bankDetail->update($validated);
         $bankDetail->load('company');
