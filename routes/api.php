@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\GeneralDocumentController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\VisaApplicationController;
+use App\Http\Controllers\Api\BankDetailController;
 
 // Public Auth routes
 
@@ -45,6 +46,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Visa Applications
     Route::apiResource('visa-applications', VisaApplicationController::class);
+    
+    // Bank Details
+    Route::apiResource('bank-details', BankDetailController::class);
 
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
     Route::apiResource('contracts', ContractController::class);
