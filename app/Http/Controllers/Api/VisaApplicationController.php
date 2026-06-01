@@ -59,8 +59,8 @@ class VisaApplicationController extends Controller
             
             'description' => 'nullable|string|max:255',
             'appointment_date' => 'nullable|date',
-            'contract_person' => 'nullable|string|max:255',
-            'contract_person_phone' => 'nullable|string|max:255',
+            'contract_person' => 'required|string|max:255',
+            'contract_person_phone' => 'required|string|max:255',
             'medical_report' => 'nullable|string|max:255',
             'attestation_details' => 'nullable|string|max:255',
             
@@ -102,8 +102,8 @@ class VisaApplicationController extends Controller
             
             'description' => 'sometimes|nullable|string|max:255',
             'appointment_date' => 'sometimes|nullable|date',
-            'contract_person' => 'sometimes|nullable|string|max:255',
-            'contract_person_phone' => 'sometimes|nullable|string|max:255',
+            'contract_person' => 'sometimes|required|string|max:255',
+            'contract_person_phone' => 'sometimes|required|string|max:255',
             'medical_report' => 'sometimes|nullable|string|max:255',
             'attestation_details' => 'sometimes|nullable|string|max:255',
             
