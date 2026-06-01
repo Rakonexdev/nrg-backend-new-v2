@@ -13,11 +13,13 @@ class BankDetail extends Model
         'bank_details_for',
         'company_id',
         'person_name',
+        'qid',
         'mobile_number',
         'bank_name',
         'account_number',
         'balance',
         'card_type',
+        'card_number',
         'updated_date'
     ];
 

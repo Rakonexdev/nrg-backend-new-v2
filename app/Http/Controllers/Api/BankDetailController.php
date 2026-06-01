@@ -20,9 +20,11 @@ class BankDetailController extends Controller
                 $q->where('bank_name', 'like', "%{$search}%")
                   ->orWhere('account_number', 'like', "%{$search}%")
                   ->orWhere('person_name', 'like', "%{$search}%")
+                  ->orWhere('qid', 'like', "%{$search}%")
                   ->orWhere('mobile_number', 'like', "%{$search}%")
                   ->orWhere('bank_details_for', 'like', "%{$search}%")
                   ->orWhere('card_type', 'like', "%{$search}%")
+                  ->orWhere('card_number', 'like', "%{$search}%")
                   ->orWhereHas('company', function($c) use ($search) {
                       $c->where('name', 'like', "%{$search}%");
                   });
@@ -48,16 +50,19 @@ class BankDetailController extends Controller
             'bank_details_for' => 'required|in:Company,Person',
             'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
             'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
+            'qid' => 'nullable|string|size:11|regex:/^[0-9]+$/|required_if:bank_details_for,Person',
             'mobile_number' => 'required|string|size:8|regex:/^[0-9]+$/',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255',
             'balance' => 'required|numeric',
             'card_type' => 'required|string|max:50',
+            'card_number' => 'required|string|max:255',
             'updated_date' => 'nullable|date',
         ]);
 
         if ($validated['bank_details_for'] === 'Company') {
             $validated['person_name'] = null;
+            $validated['qid'] = null;
         } else {
             $validated['company_id'] = null;
         }
@@ -85,16 +90,19 @@ class BankDetailController extends Controller
             'bank_details_for' => 'required|in:Company,Person',
             'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
             'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
+            'qid' => 'nullable|string|size:11|regex:/^[0-9]+$/|required_if:bank_details_for,Person',
             'mobile_number' => 'required|string|size:8|regex:/^[0-9]+$/',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255',
             'balance' => 'required|numeric',
             'card_type' => 'required|string|max:50',
+            'card_number' => 'required|string|max:255',
             'updated_date' => 'nullable|date',
         ]);
 
         if ($validated['bank_details_for'] === 'Company') {
             $validated['person_name'] = null;
+            $validated['qid'] = null;
         } else {
             $validated['company_id'] = null;
         }
