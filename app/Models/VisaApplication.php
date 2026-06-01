@@ -29,6 +29,10 @@ class VisaApplication extends Model
         'total_amount',
         'total_pay',
         'due_amount',
+        'passport_photo',
+        'personal_photo',
+        'medical_appointment_page',
+        'visa_copy',
         'is_active',
     ];
 

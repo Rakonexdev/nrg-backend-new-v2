@@ -69,8 +69,20 @@ class VisaApplicationController extends Controller
             'total_pay' => 'required|numeric',
             'due_amount' => 'required|numeric',
             
+            'passport_photo' => 'required|file|max:5120',
+            'personal_photo' => 'required|file|max:5120',
+            'medical_appointment_page' => 'nullable|file|max:5120',
+            'visa_copy' => 'nullable|file|max:5120',
+            
             'is_active' => 'boolean'
         ]);
+
+        $fileFields = ['passport_photo', 'personal_photo', 'medical_appointment_page', 'visa_copy'];
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $validated[$field] = $request->file($field)->store('visa_documents', 'public');
+            }
+        }
 
         $application = VisaApplication::create($validated);
 
@@ -112,8 +124,20 @@ class VisaApplicationController extends Controller
             'total_pay' => 'sometimes|required|numeric',
             'due_amount' => 'sometimes|required|numeric',
             
+            'passport_photo' => 'nullable|file|max:5120',
+            'personal_photo' => 'nullable|file|max:5120',
+            'medical_appointment_page' => 'nullable|file|max:5120',
+            'visa_copy' => 'nullable|file|max:5120',
+            
             'is_active' => 'boolean'
         ]);
+
+        $fileFields = ['passport_photo', 'personal_photo', 'medical_appointment_page', 'visa_copy'];
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $validated[$field] = $request->file($field)->store('visa_documents', 'public');
+            }
+        }
 
         $visaApplication->update($validated);
 
