@@ -20,15 +20,26 @@ class BankDetailController extends Controller
                 $q->where('bank_name', 'like', "%{$search}%")
                   ->orWhere('account_number', 'like', "%{$search}%")
                   ->orWhere('person_name', 'like', "%{$search}%")
+                  ->orWhere('mobile_number', 'like', "%{$search}%")
                   ->orWhere('bank_details_for', 'like', "%{$search}%")
+                  ->orWhere('card_type', 'like', "%{$search}%")
                   ->orWhereHas('company', function($c) use ($search) {
                       $c->where('name', 'like', "%{$search}%");
                   });
             });
         }
 
+        $creditTotal = (clone $query)->where('card_type', 'Credit Card')->sum('balance');
+        $debitTotal = (clone $query)->where('card_type', 'Debit Card')->sum('balance');
+
         $bankDetails = $query->latest()->paginate($perPage);
-        return response()->json($bankDetails);
+
+        return response()->json(array_merge($bankDetails->toArray(), [
+            'summary' => [
+                'credit_total' => $creditTotal,
+                'debit_total' => $debitTotal
+            ]
+        ]));
     }
 
     public function store(Request $request)
@@ -37,10 +48,11 @@ class BankDetailController extends Controller
             'bank_details_for' => 'required|in:Company,Person',
             'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
             'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
+            'mobile_number' => 'required|string|size:8|regex:/^[0-9]+$/',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255',
             'balance' => 'required|numeric',
-            'card_type' => 'nullable|string|max:50',
+            'card_type' => 'required|string|max:50',
             'updated_date' => 'nullable|date',
         ]);
 
@@ -73,10 +85,11 @@ class BankDetailController extends Controller
             'bank_details_for' => 'required|in:Company,Person',
             'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
             'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
+            'mobile_number' => 'required|string|size:8|regex:/^[0-9]+$/',
             'bank_name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255',
             'balance' => 'required|numeric',
-            'card_type' => 'nullable|string|max:50',
+            'card_type' => 'required|string|max:50',
             'updated_date' => 'nullable|date',
         ]);
 
