@@ -22,6 +22,7 @@ class VisaApplication extends Model
         'description',
         'appointment_date',
         'contract_person',
+        'contract_person_phone',
         'medical_report',
         'attestation_details',
         'payment_date',
