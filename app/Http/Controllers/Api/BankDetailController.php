@@ -33,13 +33,15 @@ class BankDetailController extends Controller
 
         $creditTotal = (clone $query)->where('card_type', 'Credit Card')->sum('balance');
         $debitTotal = (clone $query)->where('card_type', 'Debit Card')->sum('balance');
+        $totalBalance = (clone $query)->sum('balance');
 
         $bankDetails = $query->latest()->paginate($perPage);
 
         return response()->json(array_merge($bankDetails->toArray(), [
             'summary' => [
                 'credit_total' => $creditTotal,
-                'debit_total' => $debitTotal
+                'debit_total' => $debitTotal,
+                'total_balance' => $totalBalance
             ]
         ]));
     }
