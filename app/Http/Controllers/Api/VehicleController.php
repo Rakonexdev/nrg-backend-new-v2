@@ -48,7 +48,7 @@ class VehicleController extends Controller
             'vehicle_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'chassis_no' => 'nullable|string|max:255',
-            'reg_expiry_date' => 'nullable|date',
+            'reg_expiry_date' => 'required|date',
             
             'company_id' => 'required|exists:companies,id',
             
@@ -83,7 +83,7 @@ class VehicleController extends Controller
             'vehicle_name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'chassis_no' => 'nullable|string|max:255',
-            'reg_expiry_date' => 'nullable|date',
+            'reg_expiry_date' => 'sometimes|required|date',
             
             'company_id' => 'sometimes|exists:companies,id',
             

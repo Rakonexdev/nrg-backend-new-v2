@@ -36,6 +36,10 @@ class VisaApplicationController extends Controller
             $query->where('company_id', $request->company_id);
         }
 
+        if ($request->filled('visa_status')) {
+            $query->where('medical_report', $request->visa_status);
+        }
+
         $perPage = $request->input('per_page', 10);
         $applications = $query->latest()->paginate($perPage);
 
@@ -56,6 +60,7 @@ class VisaApplicationController extends Controller
             'full_name' => 'required|string|max:255',
             'passport_number' => 'required|string|max:255',
             'visa_number' => 'nullable|string|max:255',
+            'visa_expiry_date' => 'nullable|date',
             
             'description' => 'nullable|string|max:255',
             'appointment_date' => 'nullable|date',
@@ -111,6 +116,7 @@ class VisaApplicationController extends Controller
             'full_name' => 'sometimes|required|string|max:255',
             'passport_number' => 'sometimes|required|string|max:255',
             'visa_number' => 'sometimes|nullable|string|max:255',
+            'visa_expiry_date' => 'sometimes|nullable|date',
             
             'description' => 'sometimes|nullable|string|max:255',
             'appointment_date' => 'sometimes|nullable|date',

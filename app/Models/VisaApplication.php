@@ -19,6 +19,7 @@ class VisaApplication extends Model
         'full_name',
         'passport_number',
         'visa_number',
+        'visa_expiry_date',
         'description',
         'appointment_date',
         'contract_person',
@@ -38,6 +39,7 @@ class VisaApplication extends Model
 
     protected $casts = [
         'vp_expiry_date' => 'date',
+        'visa_expiry_date' => 'date',
         'appointment_date' => 'datetime',
         'payment_date' => 'datetime',
         'total_amount' => 'decimal:2',
