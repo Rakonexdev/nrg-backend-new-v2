@@ -20,7 +20,8 @@ class BankDetail extends Model
         'balance',
         'card_type',
         'card_number',
-        'updated_date'
+        'updated_date',
+        'document'
     ];
 
     public function company()

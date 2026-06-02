@@ -58,6 +58,7 @@ class BankDetailController extends Controller
             'card_type' => 'required|string|max:50',
             'card_number' => 'required|string|max:255',
             'updated_date' => 'nullable|date',
+            'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ]);
 
         if ($validated['bank_details_for'] === 'Company') {
@@ -65,6 +66,13 @@ class BankDetailController extends Controller
             $validated['qid'] = null;
         } else {
             $validated['company_id'] = null;
+        }
+
+        if ($request->hasFile('document')) {
+            $file = $request->file('document');
+            $filename = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+            $path = $file->storeAs('bank_documents', $filename, 'public');
+            $validated['document'] = '/storage/' . $path;
         }
 
         $bankDetail = BankDetail::create($validated);
@@ -98,6 +106,7 @@ class BankDetailController extends Controller
             'card_type' => 'required|string|max:50',
             'card_number' => 'required|string|max:255',
             'updated_date' => 'nullable|date',
+            'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ]);
 
         if ($validated['bank_details_for'] === 'Company') {
@@ -105,6 +114,13 @@ class BankDetailController extends Controller
             $validated['qid'] = null;
         } else {
             $validated['company_id'] = null;
+        }
+
+        if ($request->hasFile('document')) {
+            $file = $request->file('document');
+            $filename = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+            $path = $file->storeAs('bank_documents', $filename, 'public');
+            $validated['document'] = '/storage/' . $path;
         }
 
         $bankDetail->update($validated);
