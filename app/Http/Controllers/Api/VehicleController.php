@@ -60,8 +60,14 @@ class VehicleController extends Controller
             'handover_datetime' => 'nullable|date',
             'return_datetime' => 'nullable|date',
             
+            'vehicle_document' => 'nullable|file|max:5120',
+            
             'is_active' => 'boolean'
         ]);
+
+        if ($request->hasFile('vehicle_document')) {
+            $validated['vehicle_document'] = $request->file('vehicle_document')->store('vehicle_documents', 'public');
+        }
 
         $vehicle = Vehicle::create($validated);
 
@@ -95,8 +101,14 @@ class VehicleController extends Controller
             'handover_datetime' => 'nullable|date',
             'return_datetime' => 'nullable|date',
             
+            'vehicle_document' => 'nullable|file|max:5120',
+            
             'is_active' => 'boolean'
         ]);
+
+        if ($request->hasFile('vehicle_document')) {
+            $validated['vehicle_document'] = $request->file('vehicle_document')->store('vehicle_documents', 'public');
+        }
 
         $vehicle->update($validated);
 

@@ -22,6 +22,7 @@ class Vehicle extends Model
         'driver_alt_phone',
         'handover_datetime',
         'return_datetime',
+        'vehicle_document',
         'is_active',
     ];
 
