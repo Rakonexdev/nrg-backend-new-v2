@@ -13,6 +13,8 @@ class CompanyVisa extends Model
         'company_id',
         'profession',
         'available_slots',
+        'vp_number',
+        'vp_expiry_date',
     ];
 
     public function company()

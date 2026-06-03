@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyVisa;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CompanyVisaController extends Controller
 {
@@ -23,9 +24,19 @@ class CompanyVisaController extends Controller
     {
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
-            'profession' => 'required|string|max:255',
+            'profession' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('company_visas')->where(function ($query) use ($request) {
+                    return $query->where('company_id', $request->company_id);
+                }),
+            ],
             'available_slots' => 'required|integer|min:0',
+            'vp_number' => 'required|string|max:255',
+            'vp_expiry_date' => 'required|date',
         ]);
+
 
         $companyVisa = CompanyVisa::create($validated);
         return response()->json($companyVisa, 201);
@@ -40,8 +51,17 @@ class CompanyVisaController extends Controller
     {
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
-            'profession' => 'required|string|max:255',
+            'profession' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('company_visas')->where(function ($query) use ($request) {
+                    return $query->where('company_id', $request->company_id);
+                })->ignore($companyVisa->id),
+            ],
             'available_slots' => 'required|integer|min:0',
+            'vp_number' => 'required|string|max:255',
+            'vp_expiry_date' => 'required|date',
         ]);
 
         $companyVisa->update($validated);
