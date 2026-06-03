@@ -20,6 +20,7 @@ class BankDetail extends Model
         'balance',
         'card_type',
         'card_number',
+        'card_expiry_date',
         'updated_date',
         'document'
     ];

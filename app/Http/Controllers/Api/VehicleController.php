@@ -61,7 +61,7 @@ class VehicleController extends Controller
             'return_datetime' => 'nullable|date',
             
             'vehicle_document' => 'nullable|file|max:5120',
-            
+            'fine_amount' => 'nullable|numeric|min:0',
             'is_active' => 'boolean'
         ]);
 
@@ -102,7 +102,7 @@ class VehicleController extends Controller
             'return_datetime' => 'nullable|date',
             
             'vehicle_document' => 'nullable|file|max:5120',
-            
+            'fine_amount' => 'nullable|numeric|min:0',
             'is_active' => 'boolean'
         ]);
 

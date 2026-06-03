@@ -46,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Visa Applications
     Route::apiResource('visa-applications', VisaApplicationController::class);
+    Route::apiResource('company-visas', \App\Http\Controllers\Api\CompanyVisaController::class);
     
     // Bank Details
     Route::apiResource('bank-details', BankDetailController::class);

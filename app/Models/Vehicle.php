@@ -23,6 +23,7 @@ class Vehicle extends Model
         'handover_datetime',
         'return_datetime',
         'vehicle_document',
+        'fine_amount',
         'is_active',
     ];
 

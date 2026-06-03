@@ -31,6 +31,11 @@ class BankDetailController extends Controller
             });
         }
 
+        $cardType = $request->input('card_type');
+        if (!empty($cardType)) {
+            $query->where('card_type', $cardType);
+        }
+
         $creditTotal = (clone $query)->where('card_type', 'Credit Card')->sum('balance');
         $debitTotal = (clone $query)->where('card_type', 'Debit Card')->sum('balance');
         $totalBalance = (clone $query)->sum('balance');
@@ -59,6 +64,7 @@ class BankDetailController extends Controller
             'balance' => 'required|numeric',
             'card_type' => 'required|string|max:50',
             'card_number' => 'required|string|max:255',
+            'card_expiry_date' => 'nullable|date',
             'updated_date' => 'nullable|date',
             'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ]);
@@ -107,6 +113,7 @@ class BankDetailController extends Controller
             'balance' => 'required|numeric',
             'card_type' => 'required|string|max:50',
             'card_number' => 'required|string|max:255',
+            'card_expiry_date' => 'nullable|date',
             'updated_date' => 'nullable|date',
             'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ]);
