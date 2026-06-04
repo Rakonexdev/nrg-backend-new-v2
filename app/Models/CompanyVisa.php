@@ -13,6 +13,7 @@ class CompanyVisa extends Model
         'company_id',
         'profession',
         'available_slots',
+        'nationality',
         'vp_number',
         'vp_expiry_date',
     ];
@@ -26,8 +27,14 @@ class CompanyVisa extends Model
 
     public function getUsedSlotsAttribute()
     {
-        return \App\Models\VisaApplication::where('company_id', $this->company_id)
+        $query = \App\Models\VisaApplication::where('company_id', $this->company_id)
             ->where('position', $this->profession)
-            ->count();
+            ->where('vp_number', $this->vp_number);
+
+        if ($this->nationality) {
+            $query->where('nationality', $this->nationality);
+        }
+
+        return $query->count();
     }
 }

@@ -11,6 +11,10 @@ class CompanyVisaController extends Controller
 {
     public function index(Request $request)
     {
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('company_visas', 'nationality')) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        }
+
         $query = CompanyVisa::with('company');
 
         if ($request->has('company_id')) {
@@ -24,15 +28,9 @@ class CompanyVisaController extends Controller
     {
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
-            'profession' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('company_visas')->where(function ($query) use ($request) {
-                    return $query->where('company_id', $request->company_id);
-                }),
-            ],
+            'profession' => 'required|string|max:255',
             'available_slots' => 'required|integer|min:0',
+            'nationality' => 'nullable|string|max:255',
             'vp_number' => 'required|string|max:255',
             'vp_expiry_date' => 'required|date',
         ]);
@@ -51,15 +49,9 @@ class CompanyVisaController extends Controller
     {
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
-            'profession' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('company_visas')->where(function ($query) use ($request) {
-                    return $query->where('company_id', $request->company_id);
-                })->ignore($companyVisa->id),
-            ],
+            'profession' => 'required|string|max:255',
             'available_slots' => 'required|integer|min:0',
+            'nationality' => 'nullable|string|max:255',
             'vp_number' => 'required|string|max:255',
             'vp_expiry_date' => 'required|date',
         ]);
