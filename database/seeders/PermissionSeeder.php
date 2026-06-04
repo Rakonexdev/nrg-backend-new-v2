@@ -28,6 +28,7 @@ class PermissionSeeder extends Seeder
             'view_collectors',
             'view_role_access',
             'view_visa_applications',
+            'view_company_visas',
 
             // Dashboard card permissions
             'dashboard_total_staff',
@@ -99,6 +100,12 @@ class PermissionSeeder extends Seeder
             'visa_application_edit',
             'visa_application_delete',
             'visa_application_status',
+            'visa_application_payment',
+
+            // Action permissions — Company Visas
+            'company_visa_create',
+            'company_visa_edit',
+            'company_visa_delete',
         ];
 
         foreach ($permissions as $permission) {

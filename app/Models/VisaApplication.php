@@ -30,6 +30,7 @@ class VisaApplication extends Model
         'total_amount',
         'total_pay',
         'due_amount',
+        'next_due_date',
         'passport_photo',
         'personal_photo',
         'medical_appointment_page',
@@ -51,5 +52,10 @@ class VisaApplication extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(VisaPayment::class);
     }
 }

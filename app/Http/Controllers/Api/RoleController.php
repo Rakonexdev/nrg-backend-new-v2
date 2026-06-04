@@ -42,7 +42,7 @@ class RoleController extends Controller
         // Clear Spatie's internal cache to ensure we see newly seeded permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $permissions = Permission::all()->pluck('name');
+        $permissions = Permission::all()->pluck('name')->unique()->values();
 
         // Group permissions into categories for the UI
         $grouped = [
@@ -106,6 +106,11 @@ class RoleController extends Controller
                 'description' => 'Control bank details CRUD operations',
                 'permissions' => []
             ],
+            'company_visas' => [
+                'label' => 'Company Visas',
+                'description' => 'Control company visa CRUD operations',
+                'permissions' => []
+            ],
         ];
 
         foreach ($permissions as $perm) {
@@ -130,6 +135,8 @@ class RoleController extends Controller
             // Priority 3: Other modules
             if (str_starts_with($perm, 'staff_')) {
                 $grouped['staff']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'company_visa_')) {
+                $grouped['company_visas']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'company_')) {
                 $grouped['companies']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'contract_')) {

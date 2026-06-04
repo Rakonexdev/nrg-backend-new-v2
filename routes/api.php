@@ -24,7 +24,6 @@ use App\Http\Controllers\Api\VisaApplicationController;
 use App\Http\Controllers\Api\BankDetailController;
 
 // Public Auth routes
-
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Protected routes
@@ -45,6 +44,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('vehicles', VehicleController::class);
     
     // Visa Applications
+    Route::post('/visa-applications/{visaApplication}/payments', function(\Illuminate\Http\Request $request, \App\Models\VisaApplication $visaApplication) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('visa_payments') || !\Illuminate\Support\Facades\Schema::hasColumn('visa_applications', 'next_due_date') || !\Illuminate\Support\Facades\Schema::hasColumn('visa_payments', 'method')) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        }
+        return app(\App\Http\Controllers\Api\VisaApplicationController::class)->addPayment($request, $visaApplication);
+    });
+    Route::put('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
+    Route::delete('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
     Route::apiResource('visa-applications', VisaApplicationController::class);
     Route::apiResource('company-visas', \App\Http\Controllers\Api\CompanyVisaController::class);
     
