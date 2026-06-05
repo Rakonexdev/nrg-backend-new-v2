@@ -29,6 +29,7 @@ class PermissionSeeder extends Seeder
             'view_role_access',
             'view_visa_applications',
             'view_company_visas',
+            'view_sponsorship_changes',
 
             // Dashboard card permissions
             'dashboard_total_staff',
@@ -106,6 +107,13 @@ class PermissionSeeder extends Seeder
             'company_visa_create',
             'company_visa_edit',
             'company_visa_delete',
+
+            // Action permissions — Sponsorship Changes
+            'sponsorship_change_create',
+            'sponsorship_change_edit',
+            'sponsorship_change_delete',
+            'sponsorship_change_status',
+            'sponsorship_change_payment',
         ];
 
         foreach ($permissions as $permission) {
@@ -138,6 +146,7 @@ class PermissionSeeder extends Seeder
             'view_staff',
             'view_companies',
             'view_contracts',
+            'view_sponsorship_changes',
             'contract_card_total_collected',
             'contract_card_pending_collection',
             'contract_card_contract_profit',

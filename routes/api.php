@@ -55,6 +55,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('visa-applications', VisaApplicationController::class);
     Route::apiResource('company-visas', \App\Http\Controllers\Api\CompanyVisaController::class);
     
+    Route::get('/sponsorship-changes', function(\Illuminate\Http\Request $request) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('sponsorship_changes')) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        }
+        return app(\App\Http\Controllers\Api\SponsorshipChangeController::class)->index($request);
+    });
+    Route::apiResource('sponsorship-changes', \App\Http\Controllers\Api\SponsorshipChangeController::class)->except(['index']);
+    Route::post('/sponsorship-changes/{sponsorshipChange}/payments', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'addPayment']);
+    Route::put('/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'updatePayment']);
+    Route::delete('/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'deletePayment']);
+    
     // Bank Details
     Route::apiResource('bank-details', BankDetailController::class);
 

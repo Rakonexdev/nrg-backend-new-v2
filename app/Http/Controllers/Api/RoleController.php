@@ -111,6 +111,11 @@ class RoleController extends Controller
                 'description' => 'Control company visa CRUD operations',
                 'permissions' => []
             ],
+            'sponsorship_changes' => [
+                'label' => 'Sponsorship Changes',
+                'description' => 'Control sponsorship change CRUD operations',
+                'permissions' => []
+            ],
         ];
 
         foreach ($permissions as $perm) {
@@ -153,6 +158,8 @@ class RoleController extends Controller
                 $grouped['visa_applications']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'bank_detail_')) {
                 $grouped['bank_details']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'sponsorship_change_')) {
+                $grouped['sponsorship_changes']['permissions'][] = $perm;
             }
         }
 

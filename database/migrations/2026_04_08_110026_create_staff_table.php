@@ -6,13 +6,15 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('staff', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('email')->unique();
-            $table->string('designation')->nullable();
-            $table->string('personal_number', 25)->nullable();
-            $table->string('emergency_contact_number', 25)->nullable();
-            $table->string('nid_passport')->nullable();
+            $table->string('name');
+            $table->string('nationality')->nullable();
+            $table->string('profession')->nullable();
+            $table->string('mobile')->nullable();
+            $table->date('date_of_birth')->nullable();
+            $table->string('passport_number')->nullable();
+            $table->date('passport_expiry')->nullable();
+            $table->string('qid_number')->nullable();
+            $table->date('qid_expiry')->nullable();
             $table->enum('status', ['active', 'inactive', 'on_leave'])->default('active');
             $table->timestamps();
         });
