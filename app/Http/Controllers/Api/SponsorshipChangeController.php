@@ -21,8 +21,10 @@ class SponsorshipChangeController extends Controller
                   ->orWhere('phone', 'like', "%{$search}%")
                   ->orWhere('identity_phone', 'like', "%{$search}%")
                   ->orWhere('alt_phone', 'like', "%{$search}%")
+                  ->orWhere('ec_number', 'like', "%{$search}%")
                   ->orWhereHas('company', function($c) use ($search) {
-                      $c->where('name', 'like', "%{$search}%");
+                      $c->where('name', 'like', "%{$search}%")
+                        ->orWhere('computer_card', 'like', "%{$search}%");
                   });
             });
         }
