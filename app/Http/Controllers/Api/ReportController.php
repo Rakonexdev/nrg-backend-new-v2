@@ -171,7 +171,6 @@ class ReportController extends Controller
             ->sum('amount');
 
         $totalExpenditure = DB::table('expenses')
-            ->where('is_recoverable', false)
             ->when($fromDate, fn($q) => $q->whereDate('expense_date', '>=', $fromDate))
             ->when($toDate, fn($q) => $q->whereDate('expense_date', '<=', $toDate))
             ->sum('amount');

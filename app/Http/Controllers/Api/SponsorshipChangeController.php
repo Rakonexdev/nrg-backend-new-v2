@@ -19,6 +19,8 @@ class SponsorshipChangeController extends Controller
                   ->orWhere('qid_number', 'like', "%{$search}%")
                   ->orWhere('full_name', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('identity_phone', 'like', "%{$search}%")
+                  ->orWhere('alt_phone', 'like', "%{$search}%")
                   ->orWhereHas('company', function($c) use ($search) {
                       $c->where('name', 'like', "%{$search}%");
                   });
@@ -27,15 +29,18 @@ class SponsorshipChangeController extends Controller
 
         if ($request->has('tab')) {
             if ($request->tab === 'approved') {
-                $query->where('final_status', 'Approved');
+                $query->where('final_status', 'Approval');
             } elseif ($request->tab === 'rejected') {
                 $query->where('final_status', 'Rejected');
             } elseif ($request->tab === 'completed') {
                 $query->where('final_status', 'Completed');
+            } elseif ($request->tab === 'stopped') {
+                $query->where('final_status', 'stopped');
             } else {
                 $query->where(function($q) {
-                    $q->whereNotIn('final_status', ['Approved', 'Rejected', 'Completed'])
-                      ->orWhereNull('final_status');
+                    $q->whereNotIn('final_status', ['Approval', 'Rejected', 'Completed', 'stopped'])
+                      ->orWhereNull('final_status')
+                      ->orWhere('final_status', 'submission');
                 });
             }
         }
@@ -60,8 +65,11 @@ class SponsorshipChangeController extends Controller
             'computer_card' => 'nullable|string|max:255',
             'new_company_id' => 'required|exists:companies,id',
             'phone' => 'nullable|string|max:255',
-            'approval_date' => 'nullable|date',
-            'approval_expiry' => 'nullable|date',
+            'alt_phone' => 'nullable|string|max:255',
+            'identity_phone' => 'nullable|string|max:255',
+            'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'approval_date' => 'required_if:final_status,Approval|nullable|date',
+            'approval_expiry' => 'required_if:final_status,Approval|nullable|date',
             'labour_contract' => 'nullable|string|max:255',
             'final_status' => 'nullable|string|max:255',
             'total_contract_amount' => 'nullable|numeric|min:0',
@@ -72,6 +80,10 @@ class SponsorshipChangeController extends Controller
         $validated['total_contract_amount'] = $validated['total_contract_amount'] ?? 0;
         $validated['pay_amount'] = $validated['pay_amount'] ?? 0;
         $validated['due_amount'] = $validated['total_contract_amount'] - $validated['pay_amount'];
+
+        if ($request->hasFile('document')) {
+            $validated['document'] = $request->file('document')->store('sponsorship_documents', 'public');
+        }
 
         $sponsorship = SponsorshipChange::create($validated);
 
@@ -96,8 +108,11 @@ class SponsorshipChangeController extends Controller
             'computer_card' => 'nullable|string|max:255',
             'new_company_id' => 'required|exists:companies,id',
             'phone' => 'nullable|string|max:255',
-            'approval_date' => 'nullable|date',
-            'approval_expiry' => 'nullable|date',
+            'alt_phone' => 'nullable|string|max:255',
+            'identity_phone' => 'nullable|string|max:255',
+            'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'approval_date' => 'required_if:final_status,Approval|nullable|date',
+            'approval_expiry' => 'required_if:final_status,Approval|nullable|date',
             'labour_contract' => 'nullable|string|max:255',
             'final_status' => 'nullable|string|max:255',
             'total_contract_amount' => 'nullable|numeric|min:0',
@@ -108,6 +123,13 @@ class SponsorshipChangeController extends Controller
         $validated['total_contract_amount'] = $validated['total_contract_amount'] ?? 0;
         $validated['pay_amount'] = $validated['pay_amount'] ?? 0;
         $validated['due_amount'] = $validated['total_contract_amount'] - $validated['pay_amount'];
+
+        if ($request->hasFile('document')) {
+            if ($sponsorshipChange->document) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($sponsorshipChange->document);
+            }
+            $validated['document'] = $request->file('document')->store('sponsorship_documents', 'public');
+        }
 
         $sponsorshipChange->update($validated);
 
