@@ -47,6 +47,14 @@ class SponsorshipChangeController extends Controller
             }
         }
 
+        if ($request->has('from_date') && !empty($request->from_date)) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+        
+        if ($request->has('to_date') && !empty($request->to_date)) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
         $perPage = $request->input('per_page', 10);
         
         $sponsorships = $query->latest()->paginate($perPage);
