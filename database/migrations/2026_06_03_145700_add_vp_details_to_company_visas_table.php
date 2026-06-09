@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('company_visas', 'vp_number')) {
+            return;
+        }
         Schema::table('company_visas', function (Blueprint $table) {
             $table->string('vp_number')->after('available_slots');
             $table->date('vp_expiry_date')->after('vp_number');

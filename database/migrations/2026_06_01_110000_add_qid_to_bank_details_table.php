@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('bank_details', 'qid')) {
+            return;
+        }
         Schema::table('bank_details', function (Blueprint $table) {
             $table->string('qid')->nullable()->after('person_name');
         });

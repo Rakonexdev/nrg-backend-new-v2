@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('visa_payments', 'method')) {
+            return;
+        }
         Schema::table('visa_payments', function (Blueprint $table) {
             $table->string('method')->nullable()->after('payment_date');
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete()->after('notes');

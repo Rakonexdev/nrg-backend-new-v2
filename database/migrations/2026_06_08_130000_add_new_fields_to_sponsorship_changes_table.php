@@ -8,11 +8,21 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::table('sponsorship_changes', function (Blueprint $table) {
-            $table->string('identity_phone')->nullable()->after('full_name');
-            $table->string('alt_phone')->nullable()->after('phone');
-            $table->string('document')->nullable()->after('remark');
-        });
+        if (!Schema::hasColumn('sponsorship_changes', 'identity_phone')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('identity_phone')->nullable()->after('full_name');
+            });
+        }
+        if (!Schema::hasColumn('sponsorship_changes', 'alt_phone')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('alt_phone')->nullable()->after('phone');
+            });
+        }
+        if (!Schema::hasColumn('sponsorship_changes', 'document')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('document')->nullable()->after('remark');
+            });
+        }
     }
 
     public function down()

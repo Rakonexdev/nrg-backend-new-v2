@@ -8,13 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('company_visas', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('company_id')->constrained('companies')->onDelete('cascade');
-            $table->string('profession');
-            $table->integer('available_slots')->default(0);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('company_visas')) {
+            Schema::create('company_visas', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('company_id')->constrained('companies')->onDelete('cascade');
+                $table->string('profession');
+                $table->integer('available_slots')->default(0);
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void

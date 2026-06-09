@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('bank_details', 'card_expiry_date')) {
+            return;
+        }
         Schema::table('bank_details', function (Blueprint $table) {
             $table->date('card_expiry_date')->nullable()->after('card_number');
         });

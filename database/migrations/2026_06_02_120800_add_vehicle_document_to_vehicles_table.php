@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('vehicles', 'vehicle_document')) {
+            return;
+        }
         Schema::table('vehicles', function (Blueprint $table) {
             $table->string('vehicle_document')->nullable()->after('return_datetime');
         });

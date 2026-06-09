@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('visa_applications', 'visa_expiry_date')) {
+            return;
+        }
         Schema::table('visa_applications', function (Blueprint $table) {
             $table->date('visa_expiry_date')->nullable()->after('visa_number');
         });

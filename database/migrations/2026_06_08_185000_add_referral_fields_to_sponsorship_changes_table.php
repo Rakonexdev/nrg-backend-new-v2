@@ -11,12 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sponsorship_changes', function (Blueprint $table) {
-            $table->string('referral_contact_person')->nullable();
-            $table->string('reference_contact_number')->nullable();
-            $table->string('reference_alt_number')->nullable();
-            $table->string('identity_alt_phone')->nullable();
-        });
+        if (!Schema::hasColumn('sponsorship_changes', 'referral_contact_person')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('referral_contact_person')->nullable();
+            });
+        }
+        if (!Schema::hasColumn('sponsorship_changes', 'reference_contact_number')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('reference_contact_number')->nullable();
+            });
+        }
+        if (!Schema::hasColumn('sponsorship_changes', 'reference_alt_number')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('reference_alt_number')->nullable();
+            });
+        }
+        if (!Schema::hasColumn('sponsorship_changes', 'identity_alt_phone')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('identity_alt_phone')->nullable();
+            });
+        }
     }
 
     /**

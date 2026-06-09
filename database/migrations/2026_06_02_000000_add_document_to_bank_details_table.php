@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasColumn('bank_details', 'document')) {
+            return;
+        }
         Schema::table('bank_details', function (Blueprint $table) {
             $table->string('document')->nullable()->after('updated_date');
         });

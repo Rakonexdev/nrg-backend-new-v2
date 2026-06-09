@@ -8,10 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('expenses', function (Blueprint $table) {
-            $table->string('renewal_status')->default('processing')->nullable();
-            $table->text('renewal_notes')->nullable();
-        });
+        if (!Schema::hasColumn('expenses', 'renewal_status')) {
+            Schema::table('expenses', function (Blueprint $table) {
+                $table->string('renewal_status')->default('processing')->nullable();
+                $table->text('renewal_notes')->nullable();
+            });
+        }
     }
 
     public function down(): void

@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('visa_payments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('visa_application_id')->constrained('visa_applications')->onDelete('cascade');
-            $table->decimal('amount', 10, 2);
-            $table->date('payment_date');
-            $table->string('notes')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('visa_payments')) {
+            Schema::create('visa_payments', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('visa_application_id')->constrained('visa_applications')->onDelete('cascade');
+                $table->decimal('amount', 10, 2);
+                $table->date('payment_date');
+                $table->string('notes')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

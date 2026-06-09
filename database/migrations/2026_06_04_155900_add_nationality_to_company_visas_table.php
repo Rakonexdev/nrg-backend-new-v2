@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('company_visas', 'nationality')) {
+            return;
+        }
         Schema::table('company_visas', function (Blueprint $table) {
             $table->string('nationality')->after('profession')->nullable();
         });

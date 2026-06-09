@@ -191,7 +191,14 @@ class ExpenseController extends Controller implements HasMiddleware
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
                 'notes' => 'nullable|string',
+                'receipt_document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
             ]);
+
+            if ($request->hasFile('receipt_document')) {
+                $data['receipt_document'] = $request->file('receipt_document')->store('expenses/receipts', 'public');
+            } else {
+                unset($data['receipt_document']);
+            }
 
             if (!empty($data['contract_id'])) {
                 $contract = \App\Models\Contract::findOrFail($data['contract_id']);
@@ -250,7 +257,17 @@ class ExpenseController extends Controller implements HasMiddleware
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
                 'notes' => 'nullable|string',
+                'receipt_document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
             ]);
+
+            if ($request->hasFile('receipt_document')) {
+                if ($expense->receipt_document) {
+                    Storage::disk('public')->delete($expense->receipt_document);
+                }
+                $data['receipt_document'] = $request->file('receipt_document')->store('expenses/receipts', 'public');
+            } else {
+                unset($data['receipt_document']);
+            }
 
             if (array_key_exists('contract_id', $data) && !empty($data['contract_id'])) {
                 $contract = \App\Models\Contract::findOrFail($data['contract_id']);

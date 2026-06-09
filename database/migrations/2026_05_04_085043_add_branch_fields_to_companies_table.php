@@ -11,10 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('companies', function (Blueprint $table) {
-            $table->string('branch_name')->nullable()->after('computer_card');
-            $table->string('branch_number')->nullable()->after('branch_name');
-        });
+        if (!Schema::hasColumn('companies', 'branch_name')) {
+            Schema::table('companies', function (Blueprint $table) {
+                $table->string('branch_name')->nullable()->after('computer_card');
+            });
+        }
+
+        if (!Schema::hasColumn('companies', 'branch_number')) {
+            Schema::table('companies', function (Blueprint $table) {
+                $table->string('branch_number')->nullable()->after('branch_name');
+            });
+        }
     }
 
     /**

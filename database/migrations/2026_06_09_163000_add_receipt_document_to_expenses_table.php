@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('contract_payments', 'status')) {
-            Schema::table('contract_payments', function (Blueprint $table) {
-                $table->string('status')->default('collected')->after('amount');
+        if (!Schema::hasColumn('expenses', 'receipt_document')) {
+            Schema::table('expenses', function (Blueprint $table) {
+                $table->string('receipt_document')->nullable()->after('notes');
             });
         }
     }
@@ -23,8 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('contract_payments', function (Blueprint $table) {
-            $table->dropColumn('status');
+        Schema::table('expenses', function (Blueprint $table) {
+            $table->dropColumn('receipt_document');
         });
     }
 };

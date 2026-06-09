@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('visa_applications', 'passport_photo')) {
+            return;
+        }
         Schema::table('visa_applications', function (Blueprint $table) {
             $table->string('passport_photo')->nullable()->after('due_amount');
             $table->string('personal_photo')->nullable()->after('passport_photo');

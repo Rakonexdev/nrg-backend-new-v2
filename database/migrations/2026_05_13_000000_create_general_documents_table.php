@@ -6,15 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
-        Schema::create('general_documents', function (Blueprint $table) {
-            $table->id();
-            $table->string('document_name');
-            $table->enum('category', ['company', 'other']);
-            $table->string('file_path');
-            $table->string('file_name');
-            $table->foreignId('uploaded_by')->constrained('users');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('general_documents')) {
+            Schema::create('general_documents', function (Blueprint $table) {
+                $table->id();
+                $table->string('document_name');
+                $table->enum('category', ['company', 'other']);
+                $table->string('file_path');
+                $table->string('file_name');
+                $table->foreignId('uploaded_by')->constrained('users');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void {

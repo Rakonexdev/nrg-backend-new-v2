@@ -20,7 +20,8 @@ class Expense extends Model
         'notes',
         'recorded_by',
         'renewal_status',
-        'renewal_notes'
+        'renewal_notes',
+        'receipt_document'
     ];
 
     protected $casts = [

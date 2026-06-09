@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('vehicles', function (Blueprint $table) {
-            if (!Schema::hasColumn('vehicles', 'driver_alt_phone')) {
+        if (!Schema::hasColumn('vehicles', 'driver_alt_phone')) {
+            Schema::table('vehicles', function (Blueprint $table) {
                 $table->string('driver_alt_phone')->nullable()->after('driver_phone');
-            }
-        });
+            });
+        }
     }
 
     /**

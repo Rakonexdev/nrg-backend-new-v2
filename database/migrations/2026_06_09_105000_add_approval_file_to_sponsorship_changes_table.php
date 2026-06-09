@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sponsorship_changes', function (Blueprint $table) {
-            $table->string('approval_file')->nullable()->after('document');
-        });
+        if (!Schema::hasColumn('sponsorship_changes', 'approval_file')) {
+            Schema::table('sponsorship_changes', function (Blueprint $table) {
+                $table->string('approval_file')->nullable()->after('document');
+            });
+        }
     }
 
     /**

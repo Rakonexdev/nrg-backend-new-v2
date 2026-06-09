@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('visa_applications', 'next_due_date')) {
+            return;
+        }
         Schema::table('visa_applications', function (Blueprint $table) {
             $table->date('next_due_date')->nullable()->after('due_amount');
         });

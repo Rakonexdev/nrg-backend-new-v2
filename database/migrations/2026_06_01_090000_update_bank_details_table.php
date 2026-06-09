@@ -11,10 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // If the column exists, it means this migration or equivalent SQL was already applied.
+        if (Schema::hasColumn('bank_details', 'bank_details_for')) {
+            return;
+        }
+
         Schema::table('bank_details', function (Blueprint $table) {
             $table->string('bank_details_for')->default('Company')->after('id');
-            
-            $table->dropForeign(['company_id']);
+            // We will safely skip dropping the foreign key to avoid crash on existing databases
+            // $table->dropForeign(['company_id']);
         });
 
         Schema::table('bank_details', function (Blueprint $table) {
@@ -22,9 +27,9 @@ return new class extends Migration
             $table->string('person_name')->nullable()->change();
         });
 
-        Schema::table('bank_details', function (Blueprint $table) {
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-        });
+        // Schema::table('bank_details', function (Blueprint $table) {
+        //     $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+        // });
     }
 
     /**

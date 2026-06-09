@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('expenses', function (Blueprint $table) {
-            $table->boolean('is_recoverable')->default(false)->after('amount');
-        });
+        if (!Schema::hasColumn('expenses', 'is_recoverable')) {
+            Schema::table('expenses', function (Blueprint $table) {
+                $table->boolean('is_recoverable')->default(false)->after('amount');
+            });
+        }
     }
 
     /**
