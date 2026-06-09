@@ -22,6 +22,9 @@ class SponsorshipChangeController extends Controller
                   ->orWhere('identity_phone', 'like', "%{$search}%")
                   ->orWhere('alt_phone', 'like', "%{$search}%")
                   ->orWhere('ec_number', 'like', "%{$search}%")
+                  ->orWhere('referral_contact_person', 'like', "%{$search}%")
+                  ->orWhere('reference_contact_number', 'like', "%{$search}%")
+                  ->orWhere('reference_alt_number', 'like', "%{$search}%")
                   ->orWhereHas('company', function($c) use ($search) {
                       $c->where('name', 'like', "%{$search}%")
                         ->orWhere('computer_card', 'like', "%{$search}%");
@@ -65,7 +68,6 @@ class SponsorshipChangeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'sr_number' => 'required|string|max:255',
             'qid_number' => 'required|string|max:255',
             'qid_expiry_date' => 'nullable|date',
             'full_name' => 'required|string|max:255',
@@ -103,6 +105,13 @@ class SponsorshipChangeController extends Controller
         if ($request->hasFile('approval_file')) {
             $validated['approval_file'] = $request->file('approval_file')->store('sponsorship_documents', 'public');
         }
+
+        $lastSponsorship = SponsorshipChange::orderByRaw('CAST(sr_number AS UNSIGNED) DESC')->first();
+        $nextSerial = 1;
+        if ($lastSponsorship && is_numeric($lastSponsorship->sr_number)) {
+            $nextSerial = intval($lastSponsorship->sr_number) + 1;
+        }
+        $validated['sr_number'] = str_pad($nextSerial, 3, '0', STR_PAD_LEFT);
 
         $sponsorship = SponsorshipChange::create($validated);
 
