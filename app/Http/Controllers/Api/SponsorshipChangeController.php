@@ -82,6 +82,7 @@ class SponsorshipChangeController extends Controller
             'reference_contact_number' => 'required|string|max:255',
             'reference_alt_number' => 'nullable|string|max:255',
             'document' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'approval_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'approval_date' => 'required_if:final_status,Approval|nullable|date',
             'approval_expiry' => 'required_if:final_status,Approval|nullable|date',
             'labour_contract' => 'nullable|string|max:255',
@@ -97,6 +98,10 @@ class SponsorshipChangeController extends Controller
 
         if ($request->hasFile('document')) {
             $validated['document'] = $request->file('document')->store('sponsorship_documents', 'public');
+        }
+
+        if ($request->hasFile('approval_file')) {
+            $validated['approval_file'] = $request->file('approval_file')->store('sponsorship_documents', 'public');
         }
 
         $sponsorship = SponsorshipChange::create($validated);
@@ -129,6 +134,7 @@ class SponsorshipChangeController extends Controller
             'reference_contact_number' => 'required|string|max:255',
             'reference_alt_number' => 'nullable|string|max:255',
             'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'approval_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'approval_date' => 'required_if:final_status,Approval|nullable|date',
             'approval_expiry' => 'required_if:final_status,Approval|nullable|date',
             'labour_contract' => 'nullable|string|max:255',
@@ -147,6 +153,13 @@ class SponsorshipChangeController extends Controller
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($sponsorshipChange->document);
             }
             $validated['document'] = $request->file('document')->store('sponsorship_documents', 'public');
+        }
+
+        if ($request->hasFile('approval_file')) {
+            if ($sponsorshipChange->approval_file) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($sponsorshipChange->approval_file);
+            }
+            $validated['approval_file'] = $request->file('approval_file')->store('sponsorship_documents', 'public');
         }
 
         $sponsorshipChange->update($validated);
