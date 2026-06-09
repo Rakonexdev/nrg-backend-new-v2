@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\GeneralDocumentController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\VisaApplicationController;
 use App\Http\Controllers\Api\BankDetailController;
+use App\Http\Controllers\Api\OfficialFormatController;
 
 // Public Auth routes
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -91,6 +92,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/general-documents/{id}', [GeneralDocumentController::class, 'update'])->middleware('can:documentation_edit');
         Route::delete('/general-documents/{id}', [GeneralDocumentController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::get('/general-documents/{id}/download', [GeneralDocumentController::class, 'download'])->middleware('can:documentation_download');
+        
+        // Official Formats
+        Route::get('/official-formats', [OfficialFormatController::class, 'index']);
+        Route::post('/official-formats', [OfficialFormatController::class, 'store'])->middleware('can:documentation_create');
+        Route::post('/official-formats/{id}', [OfficialFormatController::class, 'update'])->middleware('can:documentation_edit');
+        Route::delete('/official-formats/{id}', [OfficialFormatController::class, 'destroy'])->middleware('can:documentation_delete');
+        Route::get('/official-formats/{id}/download', [OfficialFormatController::class, 'download'])->middleware('can:documentation_download');
     });
 
     // Financials
