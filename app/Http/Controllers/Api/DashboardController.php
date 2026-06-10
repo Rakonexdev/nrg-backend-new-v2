@@ -250,12 +250,14 @@ class DashboardController extends Controller
 
 
 
+        $adjustmentPaidTotal = (float) \App\Models\ContractAdjustment::sum('paid_amount');
+
         $stats = [
             'total_staff' => (int) $staffStats->total,
             'active_staff' => (int) $staffStats->active,
             'on_leave_staff' => (int) $staffStats->on_leave,
             'total_active_contracts' => (int) $contractStats->total,
-            'total_collected' => round((float) $contractStats->total_collected, 2),
+            'total_collected' => round((float) $contractStats->total_collected + $adjustmentPaidTotal, 2),
             'total_pending' => round((float) $contractStats->total_pending + (float) \App\Models\ContractAdjustment::sum('pending_amount'), 2),
             'total_profit' => round((float) $totalProfit, 2),
             'expiring_qid' => $expiringQidCount,

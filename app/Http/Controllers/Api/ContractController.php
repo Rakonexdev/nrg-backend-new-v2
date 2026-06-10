@@ -46,10 +46,12 @@ class ContractController extends Controller implements HasMiddleware
 
         $adjustmentPendingTotal = (float) \App\Models\ContractAdjustment::sum('pending_amount');
 
+        $adjustmentPaidTotal = (float) \App\Models\ContractAdjustment::sum('paid_amount');
+
         return response()->json([
             'total_contracts' => (int) $contractStats->total_contracts,
             'total_value' => round($totalValue, 2),
-            'total_paid' => round((float) $contractStats->total_paid, 2),
+            'total_paid' => round((float) $contractStats->total_paid + $adjustmentPaidTotal, 2),
             'total_pending' => round((float) $contractStats->total_pending + $adjustmentPendingTotal, 2),
             'total_personal_due_pending' => round($adjustmentPendingTotal, 2),
             'total_contract_profit' => round($totalContractProfit, 2),
