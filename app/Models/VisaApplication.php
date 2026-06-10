@@ -15,6 +15,7 @@ class VisaApplication extends Model
         'vp_number',
         'position',
         'nationality',
+        'gender',
         'company_id',
         'full_name',
         'passport_number',

@@ -14,6 +14,7 @@ class CompanyVisa extends Model
         'profession',
         'available_slots',
         'nationality',
+        'gender',
         'vp_number',
         'vp_expiry_date',
     ];
@@ -33,6 +34,10 @@ class CompanyVisa extends Model
 
         if ($this->nationality) {
             $query->where('nationality', $this->nationality);
+        }
+
+        if ($this->gender) {
+            $query->where('gender', $this->gender);
         }
 
         return $query->count();

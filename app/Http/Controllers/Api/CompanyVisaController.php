@@ -11,7 +11,7 @@ class CompanyVisaController extends Controller
 {
     public function index(Request $request)
     {
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('company_visas', 'nationality')) {
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('company_visas', 'nationality') || !\Illuminate\Support\Facades\Schema::hasColumn('company_visas', 'gender') || !\Illuminate\Support\Facades\Schema::hasColumn('visa_applications', 'gender')) {
             \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         }
 
@@ -31,6 +31,7 @@ class CompanyVisaController extends Controller
             'profession' => 'required|string|max:255',
             'available_slots' => 'required|integer|min:0',
             'nationality' => 'nullable|string|max:255',
+            'gender' => 'required|in:Male,Female',
             'vp_number' => 'required|string|max:255',
             'vp_expiry_date' => 'required|date',
         ]);
@@ -52,6 +53,7 @@ class CompanyVisaController extends Controller
             'profession' => 'required|string|max:255',
             'available_slots' => 'required|integer|min:0',
             'nationality' => 'nullable|string|max:255',
+            'gender' => 'required|in:Male,Female',
             'vp_number' => 'required|string|max:255',
             'vp_expiry_date' => 'required|date',
         ]);

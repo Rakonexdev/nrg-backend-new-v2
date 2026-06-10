@@ -81,6 +81,7 @@ class VisaApplicationController extends Controller
             'vp_number' => 'required|string|max:255',
             'position' => 'required|string|max:255',
             'nationality' => 'required|string|max:255',
+            'gender' => 'required|in:Male,Female',
             
             'company_id' => 'required|exists:companies,id',
             
@@ -137,6 +138,7 @@ class VisaApplicationController extends Controller
             'vp_number' => 'sometimes|required|string|max:255',
             'position' => 'sometimes|required|string|max:255',
             'nationality' => 'sometimes|required|string|max:255',
+            'gender' => 'sometimes|required|in:Male,Female',
             
             'company_id' => 'sometimes|required|exists:companies,id',
             
