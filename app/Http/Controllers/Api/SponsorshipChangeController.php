@@ -10,6 +10,10 @@ class SponsorshipChangeController extends Controller
 {
     public function index(Request $request)
     {
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('sponsorship_changes', 'password')) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        }
+
         $query = SponsorshipChange::with(['company', 'payments.user']);
 
         if ($request->has('search') && $request->search != '') {
@@ -83,6 +87,7 @@ class SponsorshipChangeController extends Controller
             'referral_contact_person' => 'required|string|max:255',
             'reference_contact_number' => 'required|string|max:255',
             'reference_alt_number' => 'nullable|string|max:255',
+            'password' => 'nullable|string|max:255',
             'document' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'approval_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'approval_date' => 'required_if:final_status,Approval|nullable|date',
@@ -142,6 +147,7 @@ class SponsorshipChangeController extends Controller
             'referral_contact_person' => 'required|string|max:255',
             'reference_contact_number' => 'required|string|max:255',
             'reference_alt_number' => 'nullable|string|max:255',
+            'password' => 'nullable|string|max:255',
             'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'approval_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
             'approval_date' => 'required_if:final_status,Approval|nullable|date',
