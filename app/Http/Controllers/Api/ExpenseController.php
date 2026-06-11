@@ -191,7 +191,7 @@ class ExpenseController extends Controller implements HasMiddleware
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
                 'notes' => 'nullable|string',
-                'receipt_document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
+                'receipt_document' => $isEmployeeExpense ? 'required|file|mimes:jpeg,png,jpg,pdf|max:10240' : 'nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
             ]);
 
             if ($request->hasFile('receipt_document')) {
@@ -257,7 +257,7 @@ class ExpenseController extends Controller implements HasMiddleware
                 'renewal_status' => 'nullable|string',
                 'renewal_notes' => 'nullable|string',
                 'notes' => 'nullable|string',
-                'receipt_document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
+                'receipt_document' => ($isEmployeeExpense && !$expense->receipt_document) ? 'required|file|mimes:jpeg,png,jpg,pdf|max:10240' : 'nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
             ]);
 
             if ($request->hasFile('receipt_document')) {

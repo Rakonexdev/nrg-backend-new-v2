@@ -11,7 +11,7 @@ class OfficialFormat extends Model
 
     protected $fillable = [
         'document_name',
-        'expiry_date',
+        'document_department',
         'file_path',
         'file_name',
         'uploaded_by',

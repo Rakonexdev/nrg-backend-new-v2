@@ -43,7 +43,7 @@ class OfficialFormatController extends Controller implements HasMiddleware
     {
         $request->validate([
             'document_name' => 'required|string|max:255',
-            'expiry_date' => 'nullable|date',
+            'document_department' => 'required|string|max:255',
             'file' => 'required|file|max:10240', // Max 10MB
         ]);
 
@@ -52,7 +52,7 @@ class OfficialFormatController extends Controller implements HasMiddleware
 
         $document = OfficialFormat::create([
             'document_name' => $request->document_name,
-            'expiry_date' => $request->expiry_date,
+            'document_department' => $request->document_department,
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
             'uploaded_by' => $request->user()->id
@@ -79,14 +79,14 @@ class OfficialFormatController extends Controller implements HasMiddleware
         try {
             $request->validate([
                 'document_name' => 'required|string|max:255',
-                'expiry_date' => 'nullable|date',
+                'document_department' => 'required|string|max:255',
                 'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240'
             ]);
 
             $document = OfficialFormat::findOrFail($id);
             $data = [
                 'document_name' => $request->document_name,
-                'expiry_date' => $request->expiry_date
+                'document_department' => $request->document_department
             ];
 
             if ($request->hasFile('file')) {
