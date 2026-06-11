@@ -81,6 +81,9 @@ class PermissionSeeder extends Seeder
 
             // Action permissions — Reports
             'report_doc_status_edit',
+            'income_card_total_income',
+            'income_card_total_expenditure',
+            'income_card_net_balance',
 
             // Action permissions — General Documentation
             'view_documentation',

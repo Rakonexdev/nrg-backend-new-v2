@@ -86,6 +86,11 @@ class RoleController extends Controller
                 'description' => 'Control actions within reports',
                 'permissions' => []
             ],
+            'income_cards' => [
+                'label' => 'Income Report Cards',
+                'description' => 'Control visibility of summary cards in Income & Expenditure report',
+                'permissions' => []
+            ],
             'documentation' => [
                 'label' => 'Documentation',
                 'description' => 'Control documentation uploads and management',
@@ -152,6 +157,8 @@ class RoleController extends Controller
                 $grouped['collectors']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'report_')) {
                 $grouped['reports']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'income_card_')) {
+                $grouped['income_cards']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'vehicle_')) {
                 $grouped['vehicles']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'visa_application_')) {
