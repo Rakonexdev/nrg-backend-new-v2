@@ -28,7 +28,7 @@ use App\Http\Controllers\Api\OfficialFormatController;
 Route::post('/auth/login', [AuthController::class, 'login']);
 
 // Protected routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     // Auth Base
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);

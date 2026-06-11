@@ -269,6 +269,7 @@ class RoleController extends Controller
                 'is_active' => $user->is_active,
                 'role' => $user->roles->first()?->name,
                 'permissions' => $user->getAllPermissions()->pluck('name'),
+                'allowed_login_shifts' => $user->allowed_login_shifts,
                 'created_at' => $user->created_at,
             ];
         });
@@ -287,6 +288,9 @@ class RoleController extends Controller
             'password' => 'required|string|min:8',
             'mobile' => 'nullable|string',
             'role' => 'required|string|exists:roles,name',
+            'allowed_login_shifts' => 'nullable|array',
+            'allowed_login_shifts.*.start' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
+            'allowed_login_shifts.*.end' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
         ]);
 
         // Prevent creating super_admin users
@@ -300,6 +304,7 @@ class RoleController extends Controller
             'password' => Hash::make($request->password),
             'mobile' => $request->mobile,
             'is_active' => true,
+            'allowed_login_shifts' => $request->allowed_login_shifts,
         ]);
 
         $user->assignRole($request->role);
@@ -334,9 +339,16 @@ class RoleController extends Controller
             'mobile' => 'nullable|string',
             'role' => 'sometimes|string|exists:roles,name',
             'is_active' => 'sometimes|boolean',
+            'allowed_login_shifts' => 'nullable|array',
+            'allowed_login_shifts.*.start' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
+            'allowed_login_shifts.*.end' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
         ]);
 
-        $updateData = $request->only(['name', 'email', 'mobile', 'is_active']);
+        $updateData = $request->only(['name', 'email', 'mobile', 'allowed_login_shifts']);
+        
+        if ($request->has('is_active')) {
+            $updateData['is_active'] = filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN);
+        }
         
         if ($request->filled('password')) {
             $updateData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);

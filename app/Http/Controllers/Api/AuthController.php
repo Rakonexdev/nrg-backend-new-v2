@@ -14,6 +14,11 @@ class AuthController extends Controller
         if (Auth::attempt($request->only('email', 'password'))) {
             $user = User::with('roles')->find(Auth::id());
 
+            if (!$user->isWithinAllowedLoginTime()) {
+                Auth::logout();
+                return response()->json(['message' => 'Your shift time is completed. Please contact the Super Admin to extend your time.'], 403);
+            }
+
             // Build user response with permissions
             $userData = $user->toArray();
             $userData['permissions'] = $user->getAllPermissions()->pluck('name')->values();
