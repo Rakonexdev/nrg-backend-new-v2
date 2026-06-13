@@ -28,7 +28,10 @@ class OfficialFormatController extends Controller implements HasMiddleware
             $query = OfficialFormat::query();
 
             if ($request->has('search') && $request->search != '') {
-                $query->where('document_name', 'like', '%' . $request->search . '%');
+                $query->where(function($q) use ($request) {
+                    $q->where('document_name', 'like', '%' . $request->search . '%')
+                      ->orWhere('document_department', 'like', '%' . $request->search . '%');
+                });
             }
 
             return $query->with('uploader:id,name')
