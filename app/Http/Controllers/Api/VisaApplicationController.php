@@ -61,6 +61,11 @@ class VisaApplicationController extends Controller
         $perPage = $request->input('per_page', 10);
         $applications = $query->latest()->paginate($perPage);
 
+        $uniqueStatuses = VisaApplication::whereNotNull('medical_report')
+                            ->where('medical_report', '!=', '')
+                            ->distinct()
+                            ->pluck('medical_report');
+
         return response()->json([
             'data' => $applications->items(),
             'meta' => [
@@ -73,6 +78,7 @@ class VisaApplicationController extends Controller
                 'total_collected' => $totalCollected,
                 'total_pending' => $totalPending,
                 'total_expired_vps' => $totalExpiredVps,
+                'unique_statuses' => $uniqueStatuses,
             ]
         ]);
     }
