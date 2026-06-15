@@ -45,9 +45,11 @@ class SponsorshipChangeController extends Controller
                 $query->where('final_status', 'Completed');
             } elseif ($request->tab === 'stopped') {
                 $query->where('final_status', 'stopped');
+            } elseif ($request->tab === 'canceled') {
+                $query->where('final_status', 'Canceled');
             } else {
                 $query->where(function($q) {
-                    $q->whereNotIn('final_status', ['Approval', 'Rejected', 'Completed', 'stopped'])
+                    $q->whereNotIn('final_status', ['Approval', 'Rejected', 'Completed', 'stopped', 'Canceled'])
                       ->orWhereNull('final_status')
                       ->orWhere('final_status', 'submission');
                 });
