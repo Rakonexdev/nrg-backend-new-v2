@@ -26,6 +26,7 @@ class VisaApplicationController extends Controller
                   ->orWhere('visa_number', 'like', "%{$search}%")
                   ->orWhere('contract_person', 'like', "%{$search}%")
                   ->orWhere('contract_person_phone', 'like', "%{$search}%")
+                  ->orWhere('nationality', 'like', "%{$search}%")
                   ->orWhereHas('company', function ($companyQuery) use ($search) {
                       $companyQuery->where('name', 'like', "%{$search}%")
                                    ->orWhere('computer_card', 'like', "%{$search}%");
