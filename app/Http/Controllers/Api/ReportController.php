@@ -207,57 +207,80 @@ class ReportController extends Controller
         $search = $request->search;
         $status = $request->status;
 
-        $query = Expense::with(['staff.branch', 'subcategory', 'staff.company'])
-            ->whereNotNull('validation_date')
-            ->whereNotNull('staff_id')
-            ->whereHas('subcategory', function($q) {
-                $q->where('name', 'like', '%QID%')
-                  ->orWhere('name', 'like', '%PASSPORT%')
-                  ->orWhere('name', 'like', '%PP%');
+        $baseQuery = Expense::select('expenses.*')
+            ->join('staff', 'expenses.staff_id', '=', 'staff.id')
+            ->join('expense_categories as subcategory', 'expenses.subcategory_id', '=', 'subcategory.id')
+            ->whereNotNull('expenses.validation_date')
+            ->whereNotNull('expenses.staff_id')
+            ->where(function($q) {
+                $q->whereNull('expenses.renewal_status')
+                  ->orWhere('expenses.renewal_status', '!=', 'completed');
             })
             ->where(function($q) {
-                $q->whereNull('renewal_status')
-                  ->orWhere('renewal_status', '!=', 'completed');
+                // Condition for QID
+                $q->where(function($sq) {
+                    $sq->where('subcategory.name', 'like', '%QID%')
+                       ->where(function($ssq) {
+                           $ssq->whereNull('staff.qid_expiry')
+                               ->orWhereColumn('staff.qid_expiry', '<', 'expenses.validation_date');
+                       });
+                })
+                // Condition for Passport
+                ->orWhere(function($sq) {
+                    $sq->where(function($ssq) {
+                        $ssq->where('subcategory.name', 'like', '%PASSPORT%')
+                            ->orWhere('subcategory.name', 'like', '%PP%');
+                    })
+                    ->where(function($ssq) {
+                        $ssq->whereNull('staff.passport_expiry')
+                            ->orWhereColumn('staff.passport_expiry', '<', 'expenses.validation_date');
+                    });
+                });
             });
 
         // Search filter
         if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->whereHas('staff', function($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%")
-                       ->orWhere('qid_number', 'like', "%{$search}%")
-                       ->orWhere('phone', 'like', "%{$search}%");
-                })
-                ->orWhereHas('staff.company', function($cq) use ($search) {
-                    $cq->where('name', 'like', "%{$search}%");
-                })
-                ->orWhereHas('subcategory', function($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%");
-                })
-                ->orWhere('renewal_status', 'like', "%{$search}%")
-                ->orWhere('renewal_notes', 'like', "%{$search}%");
+            $baseQuery->where(function($q) use ($search) {
+                $q->where('staff.name', 'like', "%{$search}%")
+                  ->orWhere('staff.qid_number', 'like', "%{$search}%")
+                  ->orWhere('staff.phone', 'like', "%{$search}%")
+                  ->orWhere('subcategory.name', 'like', "%{$search}%")
+                  ->orWhere('expenses.renewal_status', 'like', "%{$search}%")
+                  ->orWhere('expenses.renewal_notes', 'like', "%{$search}%")
+                  ->orWhereExists(function ($query) use ($search) {
+                      $query->select(DB::raw(1))
+                            ->from('companies')
+                            ->whereColumn('companies.id', 'staff.company_id')
+                            ->where('companies.name', 'like', "%{$search}%");
+                  });
             });
         }
 
+        // Summary counts (from full unfiltered set for totals)
+        $totalPending = (clone $baseQuery)->count();
+        $processing = (clone $baseQuery)->where(function($q) {
+            $q->where('expenses.renewal_status', 'processing')
+              ->orWhereNull('expenses.renewal_status');
+        })->count();
+        $delayed = (clone $baseQuery)->where('expenses.renewal_status', 'delayed')->count();
+
         // Status filter
         if ($status) {
-            $query->where('renewal_status', $status);
+            $baseQuery->where(function($q) use ($status) {
+                if ($status === 'processing') {
+                    $q->where('expenses.renewal_status', 'processing')
+                      ->orWhereNull('expenses.renewal_status');
+                } else {
+                    $q->where('expenses.renewal_status', $status);
+                }
+            });
         }
 
-        $paginated = $query->latest()->paginate($perPage);
+        $paginated = $baseQuery->with(['staff.branch', 'subcategory', 'staff.company'])
+                               ->latest('expenses.created_at')
+                               ->paginate($perPage);
 
-        $items = $paginated->getCollection()->filter(function ($expense) {
-            if (!$expense->staff || !$expense->subcategory) return false;
-            $subName = strtoupper($expense->subcategory->name);
-
-            if (str_contains($subName, 'QID')) {
-                return !$expense->staff->qid_expiry || $expense->staff->qid_expiry < $expense->validation_date;
-            }
-            if (str_contains($subName, 'PASSPORT') || str_contains($subName, 'PP')) {
-                return !$expense->staff->passport_expiry || $expense->staff->passport_expiry < $expense->validation_date;
-            }
-            return false;
-        })->map(function ($expense) {
+        $items = $paginated->getCollection()->map(function ($expense) {
             $subName = strtoupper($expense->subcategory?->name ?? '');
             $type = str_contains($subName, 'QID') ? 'QID' : 'Passport';
 
@@ -284,18 +307,6 @@ class ReportController extends Controller
                 ],
             ];
         })->values();
-
-        // Summary counts (from full unfiltered set for totals)
-        $allQuery = Expense::whereNotNull('validation_date')
-            ->whereNotNull('staff_id')
-            ->where(function($q) {
-                $q->whereNull('renewal_status')
-                  ->orWhere('renewal_status', '!=', 'completed');
-            });
-
-        $totalPending = (clone $allQuery)->count();
-        $processing = (clone $allQuery)->where('renewal_status', 'processing')->count();
-        $delayed = (clone $allQuery)->where('renewal_status', 'delayed')->count();
 
         return response()->json([
             'data' => $items,
