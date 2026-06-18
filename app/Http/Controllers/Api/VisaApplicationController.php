@@ -102,7 +102,7 @@ class VisaApplicationController extends Controller
             'visa_expiry_date' => 'nullable|date',
             
             'description' => 'nullable|string|max:255',
-            'appointment_date' => 'nullable|date',
+            'appointment_date' => 'required_if:medical_report,Medical,MEDICAL,medical|nullable|date',
             'contract_person' => 'required|string|max:255',
             'contract_person_phone' => 'required|string|max:255',
             'medical_report' => 'nullable|string|max:255',
@@ -159,7 +159,7 @@ class VisaApplicationController extends Controller
             'visa_expiry_date' => 'sometimes|nullable|date',
             
             'description' => 'sometimes|nullable|string|max:255',
-            'appointment_date' => 'sometimes|nullable|date',
+            'appointment_date' => 'sometimes|required_if:medical_report,Medical,MEDICAL,medical|nullable|date',
             'contract_person' => 'sometimes|required|string|max:255',
             'contract_person_phone' => 'sometimes|required|string|max:255',
             'medical_report' => 'sometimes|nullable|string|max:255',

@@ -42,8 +42,8 @@ class VisaApplication extends Model
     protected $casts = [
         'vp_expiry_date' => 'date',
         'visa_expiry_date' => 'date',
-        'appointment_date' => 'datetime',
-        'payment_date' => 'datetime',
+        'appointment_date' => 'datetime:Y-m-d\TH:i:s',
+        'payment_date' => 'datetime:Y-m-d\TH:i:s',
         'total_amount' => 'decimal:2',
         'total_pay' => 'decimal:2',
         'due_amount' => 'decimal:2',

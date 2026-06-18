@@ -29,8 +29,8 @@ class Vehicle extends Model
 
     protected $casts = [
         'reg_expiry_date' => 'date',
-        'handover_datetime' => 'datetime',
-        'return_datetime' => 'datetime',
+        'handover_datetime' => 'datetime:Y-m-d\TH:i:s',
+        'return_datetime' => 'datetime:Y-m-d\TH:i:s',
         'is_active' => 'boolean',
     ];
 
