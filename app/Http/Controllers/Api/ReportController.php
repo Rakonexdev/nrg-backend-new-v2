@@ -213,10 +213,6 @@ class ReportController extends Controller
             ->whereNotNull('expenses.validation_date')
             ->whereNotNull('expenses.staff_id')
             ->where(function($q) {
-                $q->whereNull('expenses.renewal_status')
-                  ->orWhere('expenses.renewal_status', '!=', 'completed');
-            })
-            ->where(function($q) {
                 // Condition for QID
                 $q->where(function($sq) {
                     $sq->where('subcategory.name', 'like', '%QID%')
