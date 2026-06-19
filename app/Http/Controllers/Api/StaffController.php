@@ -85,10 +85,12 @@ class StaffController extends Controller implements HasMiddleware
                         ->toArray();
 
                     $query->where('qid_expiry', '<=', $thirtyDays)
+                          ->where('status', 'active')
                           ->whereNotIn('id', $qidInProgressIds);
                     break;
                 case 'expired_qid':
-                    $query->where('qid_expiry', '<', $now);
+                    $query->where('qid_expiry', '<', $now)
+                          ->where('status', 'active');
                     break;
                 case 'expiring_passport':
                     $passportInProgressIds = (clone $inProgressQuery)
@@ -100,10 +102,12 @@ class StaffController extends Controller implements HasMiddleware
                         ->toArray();
 
                     $query->where('passport_expiry', '<=', $thirtyDays)
+                          ->where('status', 'active')
                           ->whereNotIn('id', $passportInProgressIds);
                     break;
                 case 'expired_passport':
-                    $query->where('passport_expiry', '<', $now);
+                    $query->where('passport_expiry', '<', $now)
+                          ->where('status', 'active');
                     break;
                 case 'renewing_contract':
                     $query->where(function ($q) use ($now) {

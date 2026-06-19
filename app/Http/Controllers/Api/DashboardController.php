@@ -85,16 +85,18 @@ class DashboardController extends Controller
             ->toArray();
 
         $expiringQidCount = \App\Models\Staff::where('qid_expiry', '<=', $thisMonthEnd)
+            ->where('status', 'active')
             ->whereNotIn('id', $qidInProgressIds)
             ->count();
 
         $expiringPassportCount = \App\Models\Staff::where('passport_expiry', '<=', $thisMonthEnd)
+            ->where('status', 'active')
             ->whereNotIn('id', $passportInProgressIds)
             ->count();
 
         // Upcoming expirations (next 30 days)
         // We include them if either doc is expiring, but we will filter in the map if needed
-        $upcomingExpirations = \App\Models\Staff::where(function ($q) use ($now) {
+        $upcomingExpirations = \App\Models\Staff::where('status', 'active')->where(function ($q) use ($now) {
             $thirtyDays = $now->copy()->addDays(30);
             $q->where('qid_expiry', '<=', $thirtyDays)
                 ->orWhere('passport_expiry', '<=', $thirtyDays);
