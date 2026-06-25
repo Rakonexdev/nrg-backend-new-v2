@@ -62,6 +62,46 @@ class ContractController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        if ($request->boolean('minimal')) {
+            $query = Contract::with(['staff:id,name,qid_number,mobile,qid_expiry,passport_expiry,profession,company_id', 'staff.company:id,name'])
+                ->withSum('adjustments as adjustments_paid_sum', 'paid_amount')
+                ->withSum(['expenses as recoverable_expense_total' => function ($q) {
+                    $q->where('is_recoverable', true);
+                }], 'amount');
+
+            if ($request->filled('staff_id')) {
+                $query->where('staff_id', $request->get('staff_id'));
+            }
+
+            $perPage = $request->get('per_page', 1000);
+            $contracts = $query->latest()->paginate($perPage);
+
+            return response()->json([
+                'data' => collect($contracts->items())->map(function ($c) {
+                    return [
+                        'id' => $c->id,
+                        'adjustment_paid_total' => (float)($c->adjustments_paid_sum ?? 0) - (float)($c->recoverable_expense_total ?? 0),
+                        'staff' => $c->staff ? [
+                            'id' => $c->staff->id,
+                            'name' => $c->staff->name,
+                            'qid_number' => $c->staff->qid_number,
+                            'mobile' => $c->staff->mobile,
+                            'qid_expiry' => $c->staff->qid_expiry,
+                            'passport_expiry' => $c->staff->passport_expiry,
+                            'profession' => $c->staff->profession,
+                            'company' => $c->staff->company ? ['name' => $c->staff->company->name] : null
+                        ] : null
+                    ];
+                }),
+                'meta' => [
+                    'current_page' => $contracts->currentPage(),
+                    'last_page' => $contracts->lastPage(),
+                    'per_page' => $contracts->perPage(),
+                    'total' => $contracts->total(),
+                ]
+            ]);
+        }
+
         $query = Contract::with(['staff.company', 'staff.branch', 'adjustments.creator.roles', 'latestCompanyPayment', 'latestPersonalPayment'])
             ->withSum([
                 'expenses as expense_total' => function ($q) {
