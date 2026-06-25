@@ -87,7 +87,7 @@ class ReportController extends Controller
             ->join('staff', 'contracts.staff_id', '=', 'staff.id')
             ->leftJoin('companies', 'staff.company_id', '=', 'companies.id')
             ->select(
-                'contract_payments.id',
+                DB::raw("CONCAT('income_', contract_payments.id) as id"),
                 'contract_payments.amount',
                 'contract_payments.payment_date as date',
                 'contract_payments.payment_method',
@@ -108,7 +108,7 @@ class ReportController extends Controller
             ->leftJoin('staff', 'expenses.staff_id', '=', 'staff.id')
             ->leftJoin('companies', 'staff.company_id', '=', 'companies.id')
             ->select(
-                'expenses.id',
+                DB::raw("CONCAT('expenditure_', expenses.id) as id"),
                 'expenses.amount',
                 'expenses.expense_date as date',
                 'expenses.payment_method',
@@ -195,6 +195,9 @@ class ReportController extends Controller
                 'total_recoverable' => (float)$totalRecoverable,
                 'net_balance' => (float)($totalIncome - $totalExpenditure),
             ]
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
         ]);
     }
 
