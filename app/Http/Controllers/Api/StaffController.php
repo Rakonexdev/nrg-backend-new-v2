@@ -49,7 +49,13 @@ class StaffController extends Controller implements HasMiddleware
                     ->orWhere('passport_number', 'like', "%{$search}%")
                     ->orWhere('nationality', 'like', "%{$search}%")
                     ->orWhere('profession', 'like', "%{$search}%")
-                    ->orWhere('notes', 'like', "%{$search}%");
+                    ->orWhere('mobile', 'like', "%{$search}%")
+                    ->orWhere('alternative_mobile', 'like', "%{$search}%")
+                    ->orWhere('notes', 'like', "%{$search}%")
+                    ->orWhereHas('company', function ($cq) use ($search) {
+                        $cq->where('computer_card', 'like', "%{$search}%")
+                           ->orWhere('name', 'like', "%{$search}%");
+                    });
             });
         }
 

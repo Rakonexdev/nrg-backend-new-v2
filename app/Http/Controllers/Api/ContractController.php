@@ -115,8 +115,11 @@ class ContractController extends Controller implements HasMiddleware
                 $subQuery->whereHas('staff', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('qid_number', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('alternative_mobile', 'like', "%{$search}%")
                         ->orWhereHas('company', function ($cq) use ($search) {
-                            $cq->where('name', 'like', "%{$search}%");
+                            $cq->where('name', 'like', "%{$search}%")
+                               ->orWhere('computer_card', 'like', "%{$search}%");
                         });
                 });
             });
