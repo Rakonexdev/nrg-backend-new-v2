@@ -40,7 +40,7 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         $email = strtolower($this->email ?? '');
-        if (str_contains($email, 'superadmin') || in_array($email, ['admin@nrg.local', 'admin@nrg.com', 'admin@nrgqatar.com', 'superadmin@nrg.local'])) {
+        if (str_contains($email, 'superadmin') || $email === 'superadmin@nrg.local') {
             return true;
         }
 

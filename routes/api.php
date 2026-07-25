@@ -152,7 +152,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     });
 
     // Admin User Management
-    Route::middleware('role:super_admin')->group(function () {
+    Route::middleware('super_admin')->group(function () {
         Route::get('/admin-users', [RoleController::class, 'adminUsers']);
         Route::post('/admin-users', [RoleController::class, 'createAdminUser']);
         Route::put('/admin-users/{id}', [RoleController::class, 'updateAdminUser']);
