@@ -37,12 +37,15 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     // Core Entities
     Route::get('/dashboard', [\App\Http\Controllers\Api\DashboardController::class, 'index']);
     Route::apiResource('companies', CompanyController::class);
+    Route::match(['GET', 'POST', 'DELETE'], '/companies/{id}/delete', [CompanyController::class, 'destroy']);
     Route::get('/companies/{id}/pending-collections', [CompanyController::class, 'getPendingCollections']);
     Route::apiResource('staff', StaffController::class);
+    Route::match(['GET', 'POST', 'DELETE'], '/staff/{id}/delete', [StaffController::class, 'destroy']);
     Route::apiResource('collectors', CollectorController::class);
     
     // Vehicles
     Route::apiResource('vehicles', VehicleController::class);
+    Route::match(['GET', 'POST', 'DELETE'], '/vehicles/{id}/delete', [VehicleController::class, 'destroy']);
     
     // Visa Applications
     Route::post('/visa-applications/{visaApplication}/payments', function(\Illuminate\Http\Request $request, \App\Models\VisaApplication $visaApplication) {
@@ -54,7 +57,9 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::put('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
     Route::delete('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
     Route::apiResource('visa-applications', VisaApplicationController::class);
+    Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{id}/delete', [VisaApplicationController::class, 'destroy']);
     Route::apiResource('company-visas', \App\Http\Controllers\Api\CompanyVisaController::class);
+    Route::match(['GET', 'POST', 'DELETE'], '/company-visas/{id}/delete', [\App\Http\Controllers\Api\CompanyVisaController::class, 'destroy']);
     
     Route::get('/sponsorship-changes', function(\Illuminate\Http\Request $request) {
         if (!\Illuminate\Support\Facades\Schema::hasTable('sponsorship_changes')) {
@@ -63,12 +68,14 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         return app(\App\Http\Controllers\Api\SponsorshipChangeController::class)->index($request);
     });
     Route::apiResource('sponsorship-changes', \App\Http\Controllers\Api\SponsorshipChangeController::class)->except(['index']);
+    Route::match(['GET', 'POST', 'DELETE'], '/sponsorship-changes/{id}/delete', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'destroy']);
     Route::post('/sponsorship-changes/{sponsorshipChange}/payments', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'addPayment']);
     Route::put('/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'updatePayment']);
     Route::delete('/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'deletePayment']);
     
     // Bank Details
     Route::apiResource('bank-details', BankDetailController::class);
+    Route::match(['GET', 'POST', 'DELETE'], '/bank-details/{id}/delete', [BankDetailController::class, 'destroy']);
 
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
     Route::apiResource('contracts', ContractController::class);
@@ -91,6 +98,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         Route::post('/general-documents', [GeneralDocumentController::class, 'store'])->middleware('can:documentation_create');
         Route::post('/general-documents/{id}', [GeneralDocumentController::class, 'update'])->middleware('can:documentation_edit');
         Route::delete('/general-documents/{id}', [GeneralDocumentController::class, 'destroy'])->middleware('can:documentation_delete');
+        Route::match(['GET', 'POST', 'DELETE'], '/general-documents/{id}/delete', [GeneralDocumentController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::get('/general-documents/{id}/download', [GeneralDocumentController::class, 'download'])->middleware('can:documentation_download');
         
         // Official Formats
@@ -98,6 +106,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         Route::post('/official-formats', [OfficialFormatController::class, 'store'])->middleware('can:documentation_create');
         Route::post('/official-formats/{id}', [OfficialFormatController::class, 'update'])->middleware('can:documentation_edit');
         Route::delete('/official-formats/{id}', [OfficialFormatController::class, 'destroy'])->middleware('can:documentation_delete');
+        Route::match(['GET', 'POST', 'DELETE'], '/official-formats/{id}/delete', [OfficialFormatController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::get('/official-formats/{id}/download', [OfficialFormatController::class, 'download'])->middleware('can:documentation_download');
     });
 

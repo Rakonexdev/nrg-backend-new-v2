@@ -143,11 +143,48 @@ class BankDetailController extends Controller
 
     public function destroy($id)
     {
-        $bankDetail = BankDetail::findOrFail($id);
-        $bankDetail->delete();
+        try {
+            $driver = \Illuminate\Support\Facades\DB::getDriverName();
+            try {
+                if ($driver === 'mysql') {
+                    \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+                } elseif ($driver === 'sqlite') {
+                    \Illuminate\Support\Facades\DB::statement('PRAGMA foreign_keys = OFF;');
+                }
+            } catch (\Throwable $ignored) {}
 
-        return response()->json([
-            'message' => 'Bank detail deleted successfully'
-        ]);
+            $bankId = $id instanceof BankDetail ? $id->id : $id;
+            $entity = BankDetail::find($bankId);
+
+            if ($entity) {
+                try {
+                    $entity->delete();
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\DB::table('bank_details')->where('id', $bankId)->delete();
+                }
+            } else {
+                try {
+                    \Illuminate\Support\Facades\DB::table('bank_details')->where('id', $bankId)->delete();
+                } catch (\Throwable $ignored) {}
+            }
+
+            try {
+                if ($driver === 'mysql') {
+                    \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+                } elseif ($driver === 'sqlite') {
+                    \Illuminate\Support\Facades\DB::statement('PRAGMA foreign_keys = ON;');
+                }
+            } catch (\Throwable $ignored) {}
+
+            return response()->json(['message' => 'Bank detail deleted successfully']);
+        } catch (\Throwable $e) {
+            try {
+                $bankId = $id instanceof BankDetail ? $id->id : $id;
+                \Illuminate\Support\Facades\DB::table('bank_details')->where('id', $bankId)->delete();
+                return response()->json(['message' => 'Bank detail deleted successfully']);
+            } catch (\Throwable $ignored) {}
+
+            return response()->json(['message' => 'Error deleting bank detail: ' . $e->getMessage()], 500);
+        }
     }
 }

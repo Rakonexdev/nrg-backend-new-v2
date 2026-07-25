@@ -56,6 +56,28 @@ class AppServiceProvider extends ServiceProvider
             // Ignore database connection/migration issues during seeding
         }
 
+        // Self-healing: Ensure required CRUD permissions exist in permissions table
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('permissions')) {
+                $requiredPermissions = [
+                    'view_companies', 'company_create', 'company_edit', 'company_delete',
+                    'view_staff', 'staff_create', 'staff_edit', 'staff_delete',
+                    'view_contracts', 'contract_create', 'contract_edit', 'contract_delete',
+                    'view_expenses', 'expense_create', 'expense_edit', 'expense_delete',
+                    'view_collectors', 'collector_create', 'collector_edit', 'collector_delete',
+                    'view_role_access', 'view_reports', 'view_documentation',
+                    'documentation_create', 'documentation_edit', 'documentation_delete', 'documentation_download',
+                ];
+                foreach ($requiredPermissions as $pName) {
+                    \Spatie\Permission\Models\Permission::firstOrCreate(
+                        ['name' => $pName, 'guard_name' => 'web']
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if database is not ready
+        }
+
         // Implicitly grant "Super Admin" role all permissions
         // This works in the app by using gate-related functions like auth()->user()->can() and @can()
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
