@@ -178,32 +178,48 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:50|unique:roles,name',
-            'permissions' => 'array',
-            'permissions.*' => 'string|exists:permissions,name',
-        ]);
+        try {
+            $request->validate([
+                'name' => 'required|string|max:50|unique:roles,name',
+                'permissions' => 'nullable|array',
+                'permissions.*' => 'string',
+            ]);
 
-        // Prevent creating reserved role names
-        $reserved = ['super_admin', 'collector', 'viewer'];
-        if (in_array(strtolower($request->name), $reserved)) {
-            return response()->json(['message' => 'This role name is reserved.'], 422);
+            // Prevent creating reserved role names
+            $reserved = ['super_admin', 'collector', 'viewer'];
+            if (in_array(strtolower($request->name), $reserved)) {
+                return response()->json(['message' => 'This role name is reserved.'], 422);
+            }
+
+            $role = Role::create(['name' => strtolower(str_replace(' ', '_', $request->name)), 'guard_name' => 'web']);
+
+            if ($request->permissions && is_array($request->permissions)) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('permissions')) {
+                    foreach ($request->permissions as $permName) {
+                        if (!empty($permName)) {
+                            Permission::firstOrCreate(['name' => $permName, 'guard_name' => 'web']);
+                        }
+                    }
+                }
+                $role->syncPermissions($request->permissions);
+            }
+
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+            return response()->json([
+                'message' => 'Role created successfully.',
+                'role' => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'permissions' => $role->permissions->pluck('name'),
+                ]
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Validation error: ' . implode(', ', \Illuminate\Support\Arr::flatten($e->errors()))], 422);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create role', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to create role: ' . $e->getMessage()], 500);
         }
-
-        $role = Role::create(['name' => strtolower(str_replace(' ', '_', $request->name)), 'guard_name' => 'web']);
-
-        if ($request->permissions) {
-            $role->syncPermissions($request->permissions);
-        }
-
-        return response()->json([
-            'message' => 'Role created successfully.',
-            'role' => [
-                'id' => $role->id,
-                'name' => $role->name,
-                'permissions' => $role->permissions->pluck('name'),
-            ]
-        ], 201);
     }
 
     /**
@@ -211,31 +227,50 @@ class RoleController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $role = Role::findOrFail($id);
+        try {
+            $role = Role::find($id);
+            if (!$role) {
+                return response()->json(['message' => 'Role not found.'], 404);
+            }
 
-        // Prevent editing super_admin role
-        if ($role->name === 'super_admin') {
-            return response()->json(['message' => 'Cannot modify super admin role.'], 403);
+            // Prevent editing super_admin role
+            if ($role->name === 'super_admin') {
+                return response()->json(['message' => 'Cannot modify super admin role.'], 403);
+            }
+
+            $request->validate([
+                'permissions' => 'required|array',
+                'permissions.*' => 'string',
+            ]);
+
+            // Self-healing: Ensure all submitted permissions exist in DB permissions table
+            if (\Illuminate\Support\Facades\Schema::hasTable('permissions')) {
+                foreach ($request->permissions as $permName) {
+                    if (!empty($permName)) {
+                        Permission::firstOrCreate(['name' => $permName, 'guard_name' => 'web']);
+                    }
+                }
+            }
+
+            $role->syncPermissions($request->permissions);
+
+            // Clear permission cache
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+            return response()->json([
+                'message' => 'Role permissions updated successfully.',
+                'role' => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'permissions' => $role->permissions->pluck('name'),
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => 'Validation error: ' . implode(', ', \Illuminate\Support\Arr::flatten($e->errors()))], 422);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to update role permissions', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to save role: ' . $e->getMessage()], 500);
         }
-
-        $request->validate([
-            'permissions' => 'required|array',
-            'permissions.*' => 'string|exists:permissions,name',
-        ]);
-
-        $role->syncPermissions($request->permissions);
-
-        // Clear permission cache
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        return response()->json([
-            'message' => 'Role permissions updated successfully.',
-            'role' => [
-                'id' => $role->id,
-                'name' => $role->name,
-                'permissions' => $role->permissions->pluck('name'),
-            ]
-        ]);
     }
 
     /**

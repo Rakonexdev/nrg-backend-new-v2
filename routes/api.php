@@ -156,7 +156,9 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         Route::get('/', [RoleController::class, 'index']);
         Route::get('/permissions', [RoleController::class, 'permissions']);
         Route::post('/', [RoleController::class, 'store']);
-        Route::put('/{id}', [RoleController::class, 'update']);
+        Route::match(['PUT', 'POST'], '/{id}', [RoleController::class, 'update']);
+        Route::match(['PUT', 'POST'], '/{id}/update', [RoleController::class, 'update']);
+        Route::match(['DELETE', 'POST'], '/{id}/delete', [RoleController::class, 'destroy']);
         Route::delete('/{id}', [RoleController::class, 'destroy']);
     });
 
