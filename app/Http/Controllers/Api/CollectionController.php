@@ -102,14 +102,57 @@ class CollectionController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:collected,not_collected'
-        ]);
+        try {
+            $request->validate([
+                'status' => 'required|in:collected,not_collected'
+            ]);
 
-        $payment = \App\Models\ContractPayment::findOrFail($id);
-        $payment->status = $request->status;
-        $payment->save();
+            // Ensure status column exists in contract_payments table
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('contract_payments', 'status')) {
+                try {
+                    \Illuminate\Support\Facades\Schema::table('contract_payments', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->string('status')->default('not_collected')->nullable();
+                    });
+                } catch (\Throwable $e) {
+                    try {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE contract_payments ADD status VARCHAR(255) DEFAULT 'not_collected'");
+                    } catch (\Throwable $e2) {}
+                }
+            }
 
-        return response()->json(['message' => 'Status updated successfully', 'payment' => $payment]);
+            // Ensure status column exists in collections table
+            if (\Illuminate\Support\Facades\Schema::hasTable('collections') && !\Illuminate\Support\Facades\Schema::hasColumn('collections', 'status')) {
+                try {
+                    \Illuminate\Support\Facades\Schema::table('collections', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->string('status')->default('not_collected')->nullable();
+                    });
+                } catch (\Throwable $e) {
+                    try {
+                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE collections ADD status VARCHAR(255) DEFAULT 'not_collected'");
+                    } catch (\Throwable $e2) {}
+                }
+            }
+
+            $payment = \App\Models\ContractPayment::find($id);
+            if (!$payment) {
+                $payment = \App\Models\Collection::find($id);
+            }
+
+            if (!$payment) {
+                return response()->json(['message' => 'Collection or payment record not found'], 404);
+            }
+
+            $payment->status = $request->status;
+            $payment->save();
+
+            return response()->json(['message' => 'Status updated successfully', 'payment' => $payment]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $th) {
+            \Illuminate\Support\Facades\Log::error("Failed to update collection status: " . $th->getMessage());
+            return response()->json([
+                'message' => 'Failed to update status: ' . $th->getMessage()
+            ], 500);
+        }
     }
 }

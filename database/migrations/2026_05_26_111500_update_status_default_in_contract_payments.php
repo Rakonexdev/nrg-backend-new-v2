@@ -12,12 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('contract_payments', function (Blueprint $table) {
-            $table->string('status')->default('not_collected')->change();
-        });
-        
-        // Update all existing to not_collected
-        DB::table('contract_payments')->update(['status' => 'not_collected']);
+        if (Schema::hasColumn('contract_payments', 'status')) {
+            try {
+                DB::statement("ALTER TABLE contract_payments MODIFY status VARCHAR(255) DEFAULT 'not_collected'");
+            } catch (\Throwable $e) {
+                // Ignore fallback
+            }
+            DB::table('contract_payments')->whereNull('status')->orWhere('status', '')->update(['status' => 'not_collected']);
+        }
     }
 
     /**
@@ -25,8 +27,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('contract_payments', function (Blueprint $table) {
-            $table->string('status')->default('collected')->change();
-        });
+        if (Schema::hasColumn('contract_payments', 'status')) {
+            try {
+                DB::statement("ALTER TABLE contract_payments MODIFY status VARCHAR(255) DEFAULT 'collected'");
+            } catch (\Throwable $e) {
+                // Ignore fallback
+            }
+        }
     }
 };

@@ -119,13 +119,9 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::get('/collections', [CollectionController::class, 'index']);
     Route::post('/collections', [CollectionController::class, 'store']); // Create Collection
     
-    // Auto-migrate if needed before updating status
-    Route::put('/collections/{id}/status', function (\Illuminate\Http\Request $request, $id) {
-        if (!\Illuminate\Support\Facades\Schema::hasColumn('contract_payments', 'status')) {
-            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        }
-        return app(\App\Http\Controllers\Api\CollectionController::class)->updateStatus($request, $id);
-    }); // Update Status
+    // Update Status
+    Route::match(['PUT', 'POST'], '/collections/{id}/status', [CollectionController::class, 'updateStatus']);
+    Route::match(['PUT', 'POST'], '/collections/{id}', [CollectionController::class, 'updateStatus']);
 
     Route::get('/settlements/summary', [SettlementController::class, 'todaySummary']);
     Route::get('/settlements', [SettlementController::class, 'index']);
