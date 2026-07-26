@@ -120,71 +120,44 @@ class CollectionController extends Controller
     {
         try {
             $numericId = is_object($id) ? ($id->id ?? null) : $id;
-
             $status = $request->input('status') ?? $request->input('payment_status');
 
-            if ($status) {
-                if (!in_array($status, ['collected', 'not_collected'])) {
-                    return response()->json(['message' => 'The status must be collected or not_collected.'], 422);
-                }
+            if (!$status) {
+                return response()->json(['message' => 'The status field is required.'], 422);
+            }
+
+            if (!in_array($status, ['collected', 'not_collected'])) {
+                return response()->json(['message' => 'The status must be collected or not_collected.'], 422);
             }
 
             // Ensure status column exists in contract_payments table
             if (!\Illuminate\Support\Facades\Schema::hasColumn('contract_payments', 'status')) {
                 try {
-                    \Illuminate\Support\Facades\Schema::table('contract_payments', function (\Illuminate\Database\Schema\Blueprint $table) {
-                        $table->string('status')->default('not_collected')->nullable();
-                    });
-                } catch (\Throwable $e) {
-                    try {
-                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE contract_payments ADD status VARCHAR(255) DEFAULT 'not_collected'");
-                    } catch (\Throwable $e2) {}
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE contract_payments ADD status VARCHAR(255) DEFAULT 'not_collected'");
+                } catch (\Throwable $e) {}
+            }
+
+            // Update status directly in contract_payments table
+            $affected = \Illuminate\Support\Facades\DB::table('contract_payments')
+                ->where('id', $numericId)
+                ->update(['status' => $status]);
+
+            if (!$affected) {
+                $exists = \Illuminate\Support\Facades\DB::table('contract_payments')->where('id', $numericId)->exists();
+                if (!$exists) {
+                    return response()->json(['message' => 'Payment record not found'], 404);
                 }
             }
 
-            // Ensure status column exists in collections table
-            if (\Illuminate\Support\Facades\Schema::hasTable('collections') && !\Illuminate\Support\Facades\Schema::hasColumn('collections', 'status')) {
-                try {
-                    \Illuminate\Support\Facades\Schema::table('collections', function (\Illuminate\Database\Schema\Blueprint $table) {
-                        $table->string('status')->default('not_collected')->nullable();
-                    });
-                } catch (\Throwable $e) {
-                    try {
-                        \Illuminate\Support\Facades\DB::statement("ALTER TABLE collections ADD status VARCHAR(255) DEFAULT 'not_collected'");
-                    } catch (\Throwable $e2) {}
-                }
-            }
-
-            $payment = \App\Models\ContractPayment::find($numericId);
-            if (!$payment) {
-                $payment = \App\Models\Collection::find($numericId);
-            }
-
-            if (!$payment) {
-                return response()->json(['message' => 'Collection or payment record not found'], 404);
-            }
-
-            if ($status) {
-                $payment->status = $status;
-            }
-
-            // Also update any additional fillable data passed
-            $fillable = $payment->getFillable();
-            foreach ($request->only($fillable) as $key => $val) {
-                if ($key !== 'id') {
-                    $payment->$key = $val;
-                }
-            }
-
-            $payment->save();
-
-            return response()->json(['message' => 'Updated successfully', 'payment' => $payment, 'data' => $payment]);
-        } catch (\Illuminate\Validation\ValidationException $ve) {
-            throw $ve;
-        } catch (\Throwable $th) {
-            \Illuminate\Support\Facades\Log::error("Failed to update collection: " . $th->getMessage());
             return response()->json([
-                'message' => 'Failed to update record: ' . $th->getMessage()
+                'message' => 'Status updated successfully',
+                'status' => $status,
+                'id' => $numericId
+            ]);
+        } catch (\Throwable $th) {
+            \Illuminate\Support\Facades\Log::error("Failed to update collection status: " . $th->getMessage());
+            return response()->json([
+                'message' => 'Failed to update status: ' . $th->getMessage()
             ], 500);
         }
     }
@@ -192,16 +165,16 @@ class CollectionController extends Controller
     public function destroy($id)
     {
         $numericId = is_object($id) ? ($id->id ?? null) : $id;
-        $payment = \App\Models\ContractPayment::find($numericId);
-        if ($payment) {
-            $payment->delete();
+        $deleted = \Illuminate\Support\Facades\DB::table('contract_payments')->where('id', $numericId)->delete();
+        if ($deleted) {
             return response()->json(['message' => 'Payment deleted successfully']);
         }
 
-        $collection = Collection::find($numericId);
-        if ($collection) {
-            $collection->delete();
-            return response()->json(['message' => 'Collection deleted successfully']);
+        if (\Illuminate\Support\Facades\Schema::hasTable('collections')) {
+            $deletedCollection = \Illuminate\Support\Facades\DB::table('collections')->where('id', $numericId)->delete();
+            if ($deletedCollection) {
+                return response()->json(['message' => 'Collection deleted successfully']);
+            }
         }
 
         return response()->json(['message' => 'Record not found'], 404);
