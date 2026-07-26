@@ -116,12 +116,11 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     // Financials
     Route::get('/collections/pending', [CollectionController::class, 'pendingCollections']);
     Route::get('/collections/unsettled', [CollectionController::class, 'unsettled']);
-    Route::get('/collections', [CollectionController::class, 'index']);
-    Route::post('/collections', [CollectionController::class, 'store']); // Create Collection
-    
-    // Update Status
+    Route::apiResource('collections', CollectionController::class);
+    Route::match(['PUT', 'POST'], '/collections/{id}', [CollectionController::class, 'update']);
+    Route::match(['PUT', 'POST'], '/collections/{id}/update', [CollectionController::class, 'update']);
     Route::match(['PUT', 'POST'], '/collections/{id}/status', [CollectionController::class, 'updateStatus']);
-    Route::match(['PUT', 'POST'], '/collections/{id}', [CollectionController::class, 'updateStatus']);
+    Route::match(['GET', 'POST', 'DELETE'], '/collections/{id}/delete', [CollectionController::class, 'destroy']);
 
     Route::get('/settlements/summary', [SettlementController::class, 'todaySummary']);
     Route::get('/settlements', [SettlementController::class, 'index']);
