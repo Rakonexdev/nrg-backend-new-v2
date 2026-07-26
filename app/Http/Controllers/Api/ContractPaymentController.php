@@ -85,31 +85,47 @@ class ContractPaymentController extends Controller
 
     public function destroy($contractId, $paymentId)
     {
-        $contract = Contract::findOrFail($contractId);
-        $payment = ContractPayment::where('contract_id', $contract->id)->findOrFail($paymentId);
+        try {
+            $cId = is_object($contractId) ? ($contractId->id ?? null) : $contractId;
+            $pId = is_object($paymentId) ? ($paymentId->id ?? null) : $paymentId;
 
-        DB::transaction(function () use ($payment, $contract) {
-            $adjustmentId = $payment->contract_adjustment_id;
-            $payment->delete();
-
-            if ($adjustmentId) {
-                $adjustment = \App\Models\ContractAdjustment::find($adjustmentId);
-                if ($adjustment) {
-                    $paid = $adjustment->payments()->sum('amount');
-                    $latestPayment = $adjustment->payments()->latest('payment_date')->first();
-                    $nextDate = $latestPayment ? $latestPayment->next_payment_date : null;
-                    $adjustment->update([
-                        'paid_amount' => $paid,
-                        'pending_amount' => round($adjustment->amount - $paid, 2),
-                        'next_payment_date' => $nextDate
-                    ]);
-                }
+            $payment = ContractPayment::find($pId);
+            if (!$payment) {
+                return response()->json(['message' => 'Payment record not found'], 404);
             }
 
-            $contract->syncPaymentTracking();
-        });
+            $contract = Contract::find($payment->contract_id ?? $cId);
 
-        return response()->json(['message' => 'Payment deleted']);
+            DB::transaction(function () use ($payment, $contract) {
+                $adjustmentId = $payment->contract_adjustment_id;
+                $payment->delete();
+
+                if ($adjustmentId) {
+                    $adjustment = \App\Models\ContractAdjustment::find($adjustmentId);
+                    if ($adjustment) {
+                        $paid = $adjustment->payments()->sum('amount');
+                        $latestPayment = $adjustment->payments()->latest('payment_date')->first();
+                        $nextDate = $latestPayment ? $latestPayment->next_payment_date : null;
+                        $adjustment->update([
+                            'paid_amount' => $paid,
+                            'pending_amount' => round($adjustment->amount - $paid, 2),
+                            'next_payment_date' => $nextDate
+                        ]);
+                    }
+                }
+
+                if ($contract) {
+                    $contract->syncPaymentTracking();
+                }
+            });
+
+            return response()->json(['message' => 'Payment deleted successfully']);
+        } catch (\Throwable $th) {
+            \Illuminate\Support\Facades\Log::error("Failed to delete payment: " . $th->getMessage());
+            return response()->json([
+                'message' => 'Failed to delete payment: ' . $th->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request, $contractId, $paymentId)

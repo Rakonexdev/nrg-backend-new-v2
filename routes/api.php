@@ -57,7 +57,8 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     });
     Route::put('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
     Route::match(['PUT', 'POST'], '/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
-    Route::delete('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
+    Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{visaApplication}/payments/{payment}/delete', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
+    Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
     Route::apiResource('visa-applications', VisaApplicationController::class);
     Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{id}/delete', [VisaApplicationController::class, 'destroy']);
     Route::apiResource('company-visas', \App\Http\Controllers\Api\CompanyVisaController::class);
@@ -73,7 +74,8 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::match(['GET', 'POST', 'DELETE'], '/sponsorship-changes/{id}/delete', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'destroy']);
     Route::post('/sponsorship-changes/{sponsorshipChange}/payments', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'addPayment']);
     Route::match(['PUT', 'POST'], '/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'updatePayment']);
-    Route::delete('/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'deletePayment']);
+    Route::match(['GET', 'POST', 'DELETE'], '/sponsorship-changes/{sponsorshipChange}/payments/{payment}/delete', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'deletePayment']);
+    Route::match(['GET', 'POST', 'DELETE'], '/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'deletePayment']);
     
     // Bank Details
     Route::apiResource('bank-details', BankDetailController::class);
@@ -89,7 +91,8 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::get('/contracts/{contract}/payments', [ContractPaymentController::class, 'index']);
     Route::post('/contracts/{contract}/payments', [ContractPaymentController::class, 'store']);
     Route::match(['PUT', 'POST'], '/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'update']);
-    Route::delete('/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'destroy']);
+    Route::match(['GET', 'POST', 'DELETE'], '/contracts/{contract}/payments/{payment}/delete', [ContractPaymentController::class, 'destroy']);
+    Route::match(['GET', 'POST', 'DELETE'], '/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'destroy']);
     Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show', 'update']);
 
     // Staff Docs
