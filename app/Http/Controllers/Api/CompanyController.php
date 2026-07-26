@@ -102,11 +102,16 @@ class CompanyController extends Controller implements HasMiddleware
             $company = Company::findOrFail($companyId);
             
             $input = $request->all();
-            if (array_key_exists('alternative_phone_number', $input) && ($input['alternative_phone_number'] === '' || $input['alternative_phone_number'] === null)) {
-                $input['alternative_phone_number'] = null;
+            if (array_key_exists('is_active', $input)) {
+                $input['is_active'] = filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN);
             }
-            if (array_key_exists('branch_name', $input) && ($input['branch_name'] === '' || $input['branch_name'] === null)) {
-                $input['branch_name'] = null;
+            foreach (['alternative_phone_number', 'branch_name'] as $field) {
+                if (array_key_exists($field, $input)) {
+                    $val = $input[$field];
+                    if ($val === '' || $val === 'null' || $val === 'undefined' || $val === null) {
+                        $input[$field] = null;
+                    }
+                }
             }
             $request->replace($input);
 
