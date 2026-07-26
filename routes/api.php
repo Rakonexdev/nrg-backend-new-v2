@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         return app(\App\Http\Controllers\Api\VisaApplicationController::class)->addPayment($request, $visaApplication);
     });
     Route::put('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
+    Route::match(['PUT', 'POST'], '/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
     Route::delete('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
     Route::apiResource('visa-applications', VisaApplicationController::class);
     Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{id}/delete', [VisaApplicationController::class, 'destroy']);
@@ -71,7 +72,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::apiResource('sponsorship-changes', \App\Http\Controllers\Api\SponsorshipChangeController::class)->except(['index']);
     Route::match(['GET', 'POST', 'DELETE'], '/sponsorship-changes/{id}/delete', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'destroy']);
     Route::post('/sponsorship-changes/{sponsorshipChange}/payments', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'addPayment']);
-    Route::put('/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'updatePayment']);
+    Route::match(['PUT', 'POST'], '/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'updatePayment']);
     Route::delete('/sponsorship-changes/{sponsorshipChange}/payments/{payment}', [\App\Http\Controllers\Api\SponsorshipChangeController::class, 'deletePayment']);
     
     // Bank Details
@@ -87,7 +88,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::put('/contracts/{id}/next-due-date', [ContractController::class, 'updateNextDueDate']);
     Route::get('/contracts/{contract}/payments', [ContractPaymentController::class, 'index']);
     Route::post('/contracts/{contract}/payments', [ContractPaymentController::class, 'store']);
-    Route::put('/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'update']);
+    Route::match(['PUT', 'POST'], '/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'update']);
     Route::delete('/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'destroy']);
     Route::apiResource('invoices', InvoiceController::class)->only(['index', 'show', 'update']);
 
