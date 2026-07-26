@@ -37,6 +37,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     // Core Entities
     Route::get('/dashboard', [\App\Http\Controllers\Api\DashboardController::class, 'index']);
     Route::apiResource('companies', CompanyController::class);
+    Route::match(['PUT', 'POST'], '/companies/{id}', [CompanyController::class, 'update']);
     Route::match(['GET', 'POST', 'DELETE'], '/companies/{id}/delete', [CompanyController::class, 'destroy']);
     Route::get('/companies/{id}/pending-collections', [CompanyController::class, 'getPendingCollections']);
     Route::apiResource('staff', StaffController::class);
@@ -75,10 +76,12 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     
     // Bank Details
     Route::apiResource('bank-details', BankDetailController::class);
+    Route::match(['PUT', 'POST'], '/bank-details/{id}', [BankDetailController::class, 'update']);
     Route::match(['GET', 'POST', 'DELETE'], '/bank-details/{id}/delete', [BankDetailController::class, 'destroy']);
 
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
     Route::apiResource('contracts', ContractController::class);
+    Route::match(['PUT', 'POST'], '/contracts/{id}', [ContractController::class, 'update']);
     Route::post('/contracts/{id}/adjustments', [ContractController::class, 'addAdjustment']);
     Route::put('/contracts/{id}/adjustments/{adjustment_id}', [ContractController::class, 'updateAdjustment']);
     Route::put('/contracts/{id}/next-due-date', [ContractController::class, 'updateNextDueDate']);

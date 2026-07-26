@@ -246,46 +246,79 @@ class ContractController extends Controller implements HasMiddleware
 
     public function update(Request $request, $id)
     {
-        $entity = Contract::findOrFail($id);
-        $data = $request->validate([
-            'staff_id' => 'sometimes|exists:staff,id',
-            'contract_date' => 'nullable|date',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'total_income' => 'required|numeric|min:0.01',
+        try {
+            $contractId = $id instanceof Contract ? $id->id : $id;
+            $entity = Contract::findOrFail($contractId);
 
-            'payment_type' => 'sometimes|in:Cash,Online',
-            'qid_renewal_fee' => 'nullable|numeric|min:0',
-            'qid_next_renewal_date' => 'nullable|date',
-            'passport_renewal_fee' => 'nullable|numeric|min:0',
-            'profession_change_fee' => 'nullable|numeric|min:0',
-            'sponsorship_change_fee' => 'nullable|numeric|min:0',
-            'health_card_fee' => 'nullable|numeric|min:0',
-            'others_fee' => 'nullable|numeric|min:0',
-            'others_reason' => 'nullable|string',
-            'notes' => 'nullable|string',
-        ]);
-        $data['total_income'] = (float) ($data['total_income'] ?? $entity->total_income ?? 0);
-
-
-        $newTotalIncome = array_key_exists('total_income', $data)
-            ? round((float) $data['total_income'], 2)
-            : round((float) $entity->total_income, 2);
-
-        if ($newTotalIncome < (float) $entity->paid_amount) {
-            return response()->json([
-                'message' => 'Total income cannot be less than the amount already recorded in payment history.'
-            ], 422);
-        }
-
-        $entity->update($data);
-        $entity->syncPaymentTracking();
-        return new ContractResource($entity->load(['staff', 'payments.creator.roles', 'expenses'])
-            ->loadSum([
-                'expenses as expense_total' => function ($q) {
-                    $q->where('is_recoverable', false);
+            $input = $request->all();
+            $dateFields = ['contract_date', 'start_date', 'end_date', 'qid_next_renewal_date'];
+            foreach ($dateFields as $field) {
+                if (array_key_exists($field, $input) && $input[$field] === '') {
+                    $input[$field] = null;
                 }
-            ], 'amount'));
+            }
+            $feeFields = ['qid_renewal_fee', 'passport_renewal_fee', 'profession_change_fee', 'sponsorship_change_fee', 'health_card_fee', 'others_fee'];
+            foreach ($feeFields as $field) {
+                if (array_key_exists($field, $input) && ($input[$field] === '' || $input[$field] === null)) {
+                    $input[$field] = null;
+                }
+            }
+            if (array_key_exists('others_reason', $input) && $input['others_reason'] === '') {
+                $input['others_reason'] = null;
+            }
+            if (array_key_exists('notes', $input) && $input['notes'] === '') {
+                $input['notes'] = null;
+            }
+            $request->replace($input);
+
+            $data = $request->validate([
+                'staff_id' => 'sometimes|exists:staff,id',
+                'contract_date' => 'nullable|date',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'total_income' => 'required|numeric|min:0.01',
+
+                'payment_type' => 'sometimes|in:Cash,Online',
+                'qid_renewal_fee' => 'nullable|numeric|min:0',
+                'qid_next_renewal_date' => 'nullable|date',
+                'passport_renewal_fee' => 'nullable|numeric|min:0',
+                'profession_change_fee' => 'nullable|numeric|min:0',
+                'sponsorship_change_fee' => 'nullable|numeric|min:0',
+                'health_card_fee' => 'nullable|numeric|min:0',
+                'others_fee' => 'nullable|numeric|min:0',
+                'others_reason' => 'nullable|string',
+                'notes' => 'nullable|string',
+            ]);
+            $data['total_income'] = (float) ($data['total_income'] ?? $entity->total_income ?? 0);
+
+            $newTotalIncome = array_key_exists('total_income', $data)
+                ? round((float) $data['total_income'], 2)
+                : round((float) $entity->total_income, 2);
+
+            if ($newTotalIncome < (float) $entity->paid_amount) {
+                return response()->json([
+                    'message' => 'Total income cannot be less than the amount already recorded in payment history.'
+                ], 422);
+            }
+
+            $existingColumns = \Illuminate\Support\Facades\Schema::getColumnListing($entity->getTable());
+            $safeData = array_intersect_key($data, array_flip($existingColumns));
+
+            $entity->update($safeData);
+            $entity->syncPaymentTracking();
+            return new ContractResource($entity->load(['staff', 'payments.creator.roles', 'expenses'])
+                ->loadSum([
+                    'expenses as expense_total' => function ($q) {
+                        $q->where('is_recoverable', false);
+                    }
+                ], 'amount'));
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error updating contract: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function addAdjustment(Request $request, $id)

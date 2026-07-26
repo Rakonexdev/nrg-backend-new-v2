@@ -100,45 +100,71 @@ class BankDetailController extends Controller
 
     public function update(Request $request, $id)
     {
-        $bankDetail = BankDetail::findOrFail($id);
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('bank_details', 'bank_details_for')) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                } catch (\Throwable $ignored) {}
+            }
 
-        $validated = $request->validate([
-            'bank_details_for' => 'required|in:Company,Person',
-            'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
-            'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
-            'qid' => 'nullable|string|size:11|regex:/^[0-9]+$/|required_if:bank_details_for,Person',
-            'mobile_number' => 'required|string|size:8|regex:/^[0-9]+$/',
-            'bank_name' => 'required|string|max:255',
-            'account_number' => 'required|string|max:255',
-            'balance' => 'required|numeric',
-            'card_type' => 'required|string|max:50',
-            'card_number' => 'required|string|max:255',
-            'card_expiry_date' => 'nullable|date',
-            'updated_date' => 'nullable|date',
-            'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
-        ]);
+            $bankId = $id instanceof BankDetail ? $id->id : $id;
+            $bankDetail = BankDetail::findOrFail($bankId);
 
-        if ($validated['bank_details_for'] === 'Company') {
-            $validated['person_name'] = null;
-            $validated['qid'] = null;
-        } else {
-            $validated['company_id'] = null;
+            $input = $request->all();
+            foreach (['qid', 'person_name', 'company_id', 'card_expiry_date', 'updated_date', 'document'] as $field) {
+                if (array_key_exists($field, $input) && $input[$field] === '') {
+                    $input[$field] = null;
+                }
+            }
+            $request->replace($input);
+
+            $validated = $request->validate([
+                'bank_details_for' => 'required|in:Company,Person',
+                'company_id' => 'nullable|exists:companies,id|required_if:bank_details_for,Company',
+                'person_name' => 'nullable|string|max:255|required_if:bank_details_for,Person',
+                'qid' => 'nullable|string|size:11|regex:/^[0-9]+$/|required_if:bank_details_for,Person',
+                'mobile_number' => 'required|string|size:8|regex:/^[0-9]+$/',
+                'bank_name' => 'required|string|max:255',
+                'account_number' => 'required|string|max:255',
+                'balance' => 'required|numeric',
+                'card_type' => 'required|string|max:50',
+                'card_number' => 'required|string|max:255',
+                'card_expiry_date' => 'nullable|date',
+                'updated_date' => 'nullable|date',
+                'document' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            ]);
+
+            if ($validated['bank_details_for'] === 'Company') {
+                $validated['person_name'] = null;
+                $validated['qid'] = null;
+            } else {
+                $validated['company_id'] = null;
+            }
+
+            if ($request->hasFile('document')) {
+                $file = $request->file('document');
+                $filename = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+                $path = $file->storeAs('bank_documents', $filename, 'public');
+                $validated['document'] = '/storage/' . $path;
+            }
+
+            $existingColumns = \Illuminate\Support\Facades\Schema::getColumnListing($bankDetail->getTable());
+            $safeData = array_intersect_key($validated, array_flip($existingColumns));
+
+            $bankDetail->update($safeData);
+            $bankDetail->load('company');
+
+            return response()->json([
+                'message' => 'Bank detail updated successfully',
+                'bank_detail' => $bankDetail
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error updating bank detail: ' . $e->getMessage()
+            ], 500);
         }
-
-        if ($request->hasFile('document')) {
-            $file = $request->file('document');
-            $filename = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
-            $path = $file->storeAs('bank_documents', $filename, 'public');
-            $validated['document'] = '/storage/' . $path;
-        }
-
-        $bankDetail->update($validated);
-        $bankDetail->load('company');
-
-        return response()->json([
-            'message' => 'Bank detail updated successfully',
-            'bank_detail' => $bankDetail
-        ]);
     }
 
     public function destroy($id)

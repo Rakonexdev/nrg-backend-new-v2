@@ -56,6 +56,15 @@ class CompanyController extends Controller implements HasMiddleware
 
     public function store(Request $request)
     {
+        $input = $request->all();
+        if (array_key_exists('alternative_phone_number', $input) && ($input['alternative_phone_number'] === '' || $input['alternative_phone_number'] === null)) {
+            $input['alternative_phone_number'] = null;
+        }
+        if (array_key_exists('branch_name', $input) && ($input['branch_name'] === '' || $input['branch_name'] === null)) {
+            $input['branch_name'] = null;
+        }
+        $request->replace($input);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'computer_card' => 'required|string|digits:8',
@@ -82,21 +91,48 @@ class CompanyController extends Controller implements HasMiddleware
 
     public function update(Request $request, $id)
     {
-        $company = Company::findOrFail($id);
-        
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'computer_card' => 'sometimes|required|string|digits:8',
-            'branch_name' => 'sometimes|nullable|string|max:255',
-            'branch_number' => 'sometimes|required|string|max:255',
-            'contact_person' => 'sometimes|required|string|max:255',
-            'phone_number' => 'sometimes|required|string|digits:8',
-            'alternative_phone_number' => 'nullable|string|digits:8',
-            'is_active' => 'sometimes|boolean'
-        ]);
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasColumn('companies', 'branch_name')) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                } catch (\Throwable $ignored) {}
+            }
 
-        $company->update($validated);
-        return response()->json($company);
+            $companyId = $id instanceof Company ? $id->id : $id;
+            $company = Company::findOrFail($companyId);
+            
+            $input = $request->all();
+            if (array_key_exists('alternative_phone_number', $input) && ($input['alternative_phone_number'] === '' || $input['alternative_phone_number'] === null)) {
+                $input['alternative_phone_number'] = null;
+            }
+            if (array_key_exists('branch_name', $input) && ($input['branch_name'] === '' || $input['branch_name'] === null)) {
+                $input['branch_name'] = null;
+            }
+            $request->replace($input);
+
+            $validated = $request->validate([
+                'name' => 'sometimes|required|string|max:255',
+                'computer_card' => 'sometimes|required|string|digits:8',
+                'branch_name' => 'sometimes|nullable|string|max:255',
+                'branch_number' => 'sometimes|required|string|max:255',
+                'contact_person' => 'sometimes|required|string|max:255',
+                'phone_number' => 'sometimes|required|string|digits:8',
+                'alternative_phone_number' => 'nullable|string|digits:8',
+                'is_active' => 'sometimes|boolean'
+            ]);
+
+            $existingColumns = \Illuminate\Support\Facades\Schema::getColumnListing($company->getTable());
+            $safeData = array_intersect_key($validated, array_flip($existingColumns));
+
+            $company->update($safeData);
+            return response()->json($company);
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Error updating company: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy($company)
