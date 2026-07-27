@@ -133,7 +133,10 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
 
     Route::get('/expenses/export', [ExpenseController::class, 'export']);
     Route::post('/expenses/{id}/finalize', [ExpenseController::class, 'finalizeRenewal']);
+    Route::match(['GET', 'POST', 'DELETE'], '/expenses/{id}/delete', [ExpenseController::class, 'destroy']);
+    Route::match(['GET', 'POST', 'DELETE'], '/expenses/{id}', [ExpenseController::class, 'destroy']);
     Route::apiResource('expenses', ExpenseController::class);
+    Route::match(['GET', 'POST', 'DELETE'], '/expense-categories/{id}/delete', [ExpenseCategoryController::class, 'destroy']);
     Route::apiResource('expense-categories', ExpenseCategoryController::class);
 
     // Dashboard
