@@ -469,44 +469,57 @@ class ContractController extends Controller implements HasMiddleware
 
     public function updateNextDueDate(Request $request, $id)
     {
-        $contract = Contract::findOrFail($id);
+        try {
+            $contract = Contract::findOrFail($id);
 
-        $data = $request->validate([
-            'type' => 'required|in:collection,personal',
-            'next_payment_date' => 'nullable|date',
-        ]);
+            $data = $request->validate([
+                'type' => 'required|in:collection,personal',
+                'next_payment_date' => 'nullable|date',
+            ]);
 
-        $nextDate = $data['next_payment_date'] ?? null;
+            $nextDate = $data['next_payment_date'] ?? null;
 
-        if ($data['type'] === 'collection') {
-            // Find the latest regular (non-adjustment) payment
-            $latestPayment = $contract->payments()->whereNull('contract_adjustment_id')->first();
-            if ($latestPayment) {
-                $latestPayment->update([
-                    'next_payment_date' => $nextDate
-                ]);
+            if ($data['type'] === 'collection') {
+                // Find the latest regular (non-adjustment) payment
+                $latestPayment = $contract->payments()
+                    ->whereNull('contract_adjustment_id')
+                    ->latest('payment_date')
+                    ->latest('id')
+                    ->first();
+
+                if ($latestPayment) {
+                    $latestPayment->update([
+                        'next_payment_date' => $nextDate
+                    ]);
+                } else {
+                    // Create a placeholder payment with 0 amount to hold the next_payment_date
+                    $contract->payments()->create([
+                        'amount' => 0,
+                        'payment_date' => now()->format('Y-m-d'),
+                        'payment_method' => 'Cash',
+                        'subcategory' => 'Monthly Installment',
+                        'notes' => 'Next payment date scheduled',
+                        'next_payment_date' => $nextDate,
+                        'status' => 'not_collected',
+                        'created_by' => auth()->id(),
+                    ]);
+                }
             } else {
-                // Create a placeholder payment with 0 amount to hold the next_payment_date
-                $contract->payments()->create([
-                    'amount' => 0,
-                    'payment_date' => now()->format('Y-m-d'),
-                    'payment_method' => 'Cash',
-                    'subcategory' => 'Monthly Installment',
-                    'notes' => 'Next payment date scheduled',
-                    'next_payment_date' => $nextDate,
-                    'created_by' => auth()->id(),
-                ]);
-            }
-        } else {
-            // Find the latest pending adjustment
-            $latestAdjustment = $contract->adjustments()->where('pending_amount', '>', 0)->first();
-            if ($latestAdjustment) {
-                $latestAdjustment->update([
-                    'next_payment_date' => $nextDate
-                ]);
-            } else {
-                // If there are no pending adjustments, find the latest adjustment
-                $latestAdjustment = $contract->adjustments()->first();
+                // Find the latest pending adjustment
+                $latestAdjustment = $contract->adjustments()
+                    ->where('pending_amount', '>', 0)
+                    ->latest('adjustment_date')
+                    ->latest('id')
+                    ->first();
+
+                if (!$latestAdjustment) {
+                    // If there are no pending adjustments, find the latest adjustment
+                    $latestAdjustment = $contract->adjustments()
+                        ->latest('adjustment_date')
+                        ->latest('id')
+                        ->first();
+                }
+
                 if ($latestAdjustment) {
                     $latestAdjustment->update([
                         'next_payment_date' => $nextDate
@@ -517,16 +530,26 @@ class ContractController extends Controller implements HasMiddleware
                     ]);
                 }
             }
+
+            $contract->syncPaymentTracking();
+
+            return new ContractResource($contract->load(['staff', 'payments.creator.roles', 'expenses', 'adjustments.creator.roles'])
+                ->loadSum([
+                    'expenses as expense_total' => function ($q) {
+                        $q->where('is_recoverable', false);
+                    }
+                ], 'amount'));
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Contract not found'
+            ], 404);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to update next due date: ' . $e->getMessage()
+            ], 500);
         }
-
-        $contract->syncPaymentTracking();
-
-        return new ContractResource($contract->load(['staff', 'payments.creator.roles', 'expenses', 'adjustments.creator.roles'])
-            ->loadSum([
-                'expenses as expense_total' => function ($q) {
-                    $q->where('is_recoverable', false);
-                }
-            ], 'amount'));
     }
 
     public function destroy($id)

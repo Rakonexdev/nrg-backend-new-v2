@@ -86,8 +86,8 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::apiResource('contracts', ContractController::class);
     Route::match(['PUT', 'POST'], '/contracts/{id}', [ContractController::class, 'update']);
     Route::post('/contracts/{id}/adjustments', [ContractController::class, 'addAdjustment']);
-    Route::put('/contracts/{id}/adjustments/{adjustment_id}', [ContractController::class, 'updateAdjustment']);
-    Route::put('/contracts/{id}/next-due-date', [ContractController::class, 'updateNextDueDate']);
+    Route::match(['PUT', 'POST'], '/contracts/{id}/adjustments/{adjustment_id}', [ContractController::class, 'updateAdjustment']);
+    Route::match(['PUT', 'POST'], '/contracts/{id}/next-due-date', [ContractController::class, 'updateNextDueDate']);
     Route::get('/contracts/{contract}/payments', [ContractPaymentController::class, 'index']);
     Route::post('/contracts/{contract}/payments', [ContractPaymentController::class, 'store']);
     Route::match(['PUT', 'POST'], '/contracts/{contract}/payments/{payment}', [ContractPaymentController::class, 'update']);
