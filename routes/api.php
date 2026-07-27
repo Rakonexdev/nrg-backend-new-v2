@@ -171,8 +171,8 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::middleware('super_admin')->group(function () {
         Route::get('/admin-users', [RoleController::class, 'adminUsers']);
         Route::post('/admin-users', [RoleController::class, 'createAdminUser']);
-        Route::put('/admin-users/{id}', [RoleController::class, 'updateAdminUser']);
         Route::match(['PUT', 'POST'], '/admin-users/{id}', [RoleController::class, 'updateAdminUser']);
+        Route::match(['PUT', 'POST'], '/admin-users/{id}/update', [RoleController::class, 'updateAdminUser']);
         Route::match(['DELETE', 'POST', 'GET'], '/admin-users/{id}/delete', [RoleController::class, 'deleteAdminUser']);
         Route::delete('/admin-users/{id}', [RoleController::class, 'deleteAdminUser']);
     });

@@ -331,13 +331,21 @@ class RoleController extends Controller
             'mobile' => 'nullable|string',
             'role' => 'required|string|exists:roles,name',
             'allowed_login_shifts' => 'nullable|array',
-            'allowed_login_shifts.*.start' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
-            'allowed_login_shifts.*.end' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
         ]);
 
         // Prevent creating super_admin users
         if ($request->role === 'super_admin') {
             return response()->json(['message' => 'Cannot create super admin users.'], 403);
+        }
+
+        $formattedShifts = [];
+        if (!empty($request->allowed_login_shifts) && is_array($request->allowed_login_shifts)) {
+            foreach ($request->allowed_login_shifts as $shift) {
+                if (empty($shift['start']) || empty($shift['end'])) continue;
+                $start = date('H:i', strtotime($shift['start']));
+                $end = date('H:i', strtotime($shift['end']));
+                $formattedShifts[] = ['start' => $start, 'end' => $end];
+            }
         }
 
         $user = User::create([
@@ -346,7 +354,7 @@ class RoleController extends Controller
             'password' => Hash::make($request->password),
             'mobile' => $request->mobile,
             'is_active' => true,
-            'allowed_login_shifts' => $request->allowed_login_shifts,
+            'allowed_login_shifts' => $formattedShifts,
         ]);
 
         $user->assignRole($request->role);
@@ -375,18 +383,29 @@ class RoleController extends Controller
         }
 
         $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $id,
-            'password' => 'sometimes|string|min:8',
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:users,email,' . $id,
+            'password' => 'sometimes|nullable|string|min:8',
             'mobile' => 'nullable|string',
-            'role' => 'sometimes|string|exists:roles,name',
+            'role' => 'sometimes|nullable|string',
             'is_active' => 'sometimes|boolean',
             'allowed_login_shifts' => 'nullable|array',
-            'allowed_login_shifts.*.start' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
-            'allowed_login_shifts.*.end' => 'required_with:allowed_login_shifts|date_format:H:i:s,H:i',
         ]);
 
-        $updateData = $request->only(['name', 'email', 'mobile', 'allowed_login_shifts']);
+        $updateData = $request->only(['name', 'email', 'mobile']);
+
+        if ($request->has('allowed_login_shifts')) {
+            $formattedShifts = [];
+            if (is_array($request->allowed_login_shifts)) {
+                foreach ($request->allowed_login_shifts as $shift) {
+                    if (empty($shift['start']) || empty($shift['end'])) continue;
+                    $start = date('H:i', strtotime($shift['start']));
+                    $end = date('H:i', strtotime($shift['end']));
+                    $formattedShifts[] = ['start' => $start, 'end' => $end];
+                }
+            }
+            $updateData['allowed_login_shifts'] = $formattedShifts;
+        }
         
         if ($request->has('is_active')) {
             $updateData['is_active'] = filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN);
@@ -398,7 +417,7 @@ class RoleController extends Controller
 
         $user->update($updateData);
 
-        if ($request->has('role') && $request->role !== 'super_admin') {
+        if ($request->filled('role') && $request->role !== 'super_admin') {
             $user->syncRoles([$request->role]);
         }
 
