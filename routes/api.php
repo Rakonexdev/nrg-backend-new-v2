@@ -62,6 +62,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::apiResource('visa-applications', VisaApplicationController::class);
     Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{id}/delete', [VisaApplicationController::class, 'destroy']);
     Route::apiResource('company-visas', \App\Http\Controllers\Api\CompanyVisaController::class);
+    Route::match(['PUT', 'POST'], '/company-visas/{id}', [\App\Http\Controllers\Api\CompanyVisaController::class, 'update']);
     Route::match(['GET', 'POST', 'DELETE'], '/company-visas/{id}/delete', [\App\Http\Controllers\Api\CompanyVisaController::class, 'destroy']);
     
     Route::get('/sponsorship-changes', function(\Illuminate\Http\Request $request) {
