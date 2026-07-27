@@ -250,9 +250,11 @@ class VisaApplicationController extends Controller
             'next_due_date' => 'nullable|date'
         ]);
 
+        $paymentDate = \Carbon\Carbon::parse($validated['payment_date'])->format('Y-m-d H:i:s');
+
         $visaApplication->payments()->create([
             'amount' => $validated['amount'],
-            'payment_date' => $validated['payment_date'],
+            'payment_date' => $paymentDate,
             'method' => $validated['method'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'user_id' => auth()->id(),
@@ -265,10 +267,10 @@ class VisaApplicationController extends Controller
             $visaApplication->due_amount = 0;
         }
         // Save the updated amounts and the last payment date
-        $visaApplication->payment_date = $validated['payment_date'];
+        $visaApplication->payment_date = $paymentDate;
         
-        if ($request->filled('next_due_date')) {
-            $visaApplication->next_due_date = $validated['next_due_date'];
+        if (!empty($validated['next_due_date'])) {
+            $visaApplication->next_due_date = \Carbon\Carbon::parse($validated['next_due_date'])->format('Y-m-d H:i:s');
         }
         
         $visaApplication->save();
@@ -289,13 +291,15 @@ class VisaApplicationController extends Controller
             'next_due_date' => 'nullable|date'
         ]);
 
+        $paymentDate = \Carbon\Carbon::parse($validated['payment_date'])->format('Y-m-d H:i:s');
+
         // Revert previous payment amount from totals
         $visaApplication->total_pay = $visaApplication->total_pay - $payment->amount;
         
         // Update payment record
         $payment->update([
             'amount' => $validated['amount'],
-            'payment_date' => $validated['payment_date'],
+            'payment_date' => $paymentDate,
             'method' => $validated['method'] ?? null,
             'notes' => $validated['notes'] ?? null,
             // optionally keep user_id same or update to current user
@@ -309,10 +313,10 @@ class VisaApplicationController extends Controller
             $visaApplication->due_amount = 0;
         }
         
-        $visaApplication->payment_date = $validated['payment_date'];
+        $visaApplication->payment_date = $paymentDate;
         
-        if ($request->filled('next_due_date')) {
-            $visaApplication->next_due_date = $validated['next_due_date'];
+        if (!empty($validated['next_due_date'])) {
+            $visaApplication->next_due_date = \Carbon\Carbon::parse($validated['next_due_date'])->format('Y-m-d H:i:s');
         }
         
         $visaApplication->save();

@@ -55,10 +55,9 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         }
         return app(\App\Http\Controllers\Api\VisaApplicationController::class)->addPayment($request, $visaApplication);
     });
-    Route::put('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
     Route::match(['PUT', 'POST'], '/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'updatePayment']);
     Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{visaApplication}/payments/{payment}/delete', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
-    Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
+    Route::delete('/visa-applications/{visaApplication}/payments/{payment}', [\App\Http\Controllers\Api\VisaApplicationController::class, 'deletePayment']);
     Route::apiResource('visa-applications', VisaApplicationController::class);
     Route::match(['GET', 'POST', 'DELETE'], '/visa-applications/{id}/delete', [VisaApplicationController::class, 'destroy']);
     Route::apiResource('company-visas', \App\Http\Controllers\Api\CompanyVisaController::class);
