@@ -46,20 +46,28 @@ class CompanyVisaController extends Controller
         return response()->json($companyVisa->load('company'));
     }
 
-    public function update(Request $request, CompanyVisa $companyVisa)
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'company_id' => 'required|exists:companies,id',
-            'profession' => 'required|string|max:255',
-            'available_slots' => 'required|integer|min:0',
-            'nationality' => 'required|string|max:255',
-            'gender' => 'required|in:Male,Female',
-            'vp_number' => 'required|string|max:255',
-            'vp_expiry_date' => 'required|date',
-        ]);
+        try {
+            $companyVisa = $id instanceof CompanyVisa ? $id : CompanyVisa::findOrFail($id);
 
-        $companyVisa->update($validated);
-        return response()->json($companyVisa);
+            $validated = $request->validate([
+                'company_id' => 'required|exists:companies,id',
+                'profession' => 'required|string|max:255',
+                'available_slots' => 'required|integer|min:0',
+                'nationality' => 'required|string|max:255',
+                'gender' => 'required|in:Male,Female',
+                'vp_number' => 'required|string|max:255',
+                'vp_expiry_date' => 'required|date',
+            ]);
+
+            $companyVisa->update($validated);
+            return response()->json($companyVisa->load('company'));
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Update failed: ' . $e->getMessage()], 500);
+        }
     }
 
     public function destroy($companyVisa)
