@@ -21,7 +21,10 @@ class CompanyVisaController extends Controller
             $query->where('company_id', $request->company_id);
         }
 
-        return response()->json($query->get());
+        return response()->json($query->get())
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function store(Request $request)
