@@ -48,8 +48,8 @@ class StaffResource extends JsonResource
             })->values(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'qid_days_left' => $this->qid_expiry ? \Carbon\Carbon::now()->startOfDay()->diffInDays($this->qid_expiry->startOfDay(), false) : null,
-            'passport_days_left' => $this->passport_expiry ? \Carbon\Carbon::now()->startOfDay()->diffInDays($this->passport_expiry->startOfDay(), false) : null,
+            'qid_days_left' => $this->qid_expiry ? \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($this->qid_expiry)->startOfDay(), false) : null,
+            'passport_days_left' => $this->passport_expiry ? \Carbon\Carbon::now()->startOfDay()->diffInDays(\Carbon\Carbon::parse($this->passport_expiry)->startOfDay(), false) : null,
         ];
     }
 }

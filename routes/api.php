@@ -41,11 +41,14 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::match(['GET', 'POST', 'DELETE'], '/companies/{id}/delete', [CompanyController::class, 'destroy']);
     Route::get('/companies/{id}/pending-collections', [CompanyController::class, 'getPendingCollections']);
     Route::apiResource('staff', StaffController::class);
+    Route::match(['PUT', 'POST'], '/staff/{id}', [StaffController::class, 'update']);
     Route::match(['GET', 'POST', 'DELETE'], '/staff/{id}/delete', [StaffController::class, 'destroy']);
     Route::apiResource('collectors', CollectorController::class);
+    Route::match(['PUT', 'POST'], '/collectors/{id}', [CollectorController::class, 'update']);
     
     // Vehicles
     Route::apiResource('vehicles', VehicleController::class);
+    Route::match(['PUT', 'POST'], '/vehicles/{id}', [VehicleController::class, 'update']);
     Route::match(['GET', 'POST', 'DELETE'], '/vehicles/{id}/delete', [VehicleController::class, 'destroy']);
     
     // Visa Applications
