@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\VisaApplicationController;
 use App\Http\Controllers\Api\BankDetailController;
 use App\Http\Controllers\Api\OfficialFormatController;
 use App\Http\Controllers\Api\EmployeeListMoiController;
+use App\Http\Controllers\Api\SalarySheetController;
 
 // Public Auth routes
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -132,6 +133,18 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::match(['PUT', 'POST'], '/employee-list-moi/{id}', [EmployeeListMoiController::class, 'update']);
     Route::match(['GET', 'POST', 'DELETE'], '/employee-list-moi/{id}/delete', [EmployeeListMoiController::class, 'destroy']);
     Route::get('/employee-list-moi/{id}/download', [EmployeeListMoiController::class, 'download']);
+
+    // Salary Sheet
+    Route::get('/salary-sheets', function(\Illuminate\Http\Request $request) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('salary_sheets')) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        }
+        return app(\App\Http\Controllers\Api\SalarySheetController::class)->index($request);
+    });
+    Route::apiResource('salary-sheets', SalarySheetController::class)->except(['index']);
+    Route::match(['PUT', 'POST'], '/salary-sheets/{id}', [SalarySheetController::class, 'update']);
+    Route::match(['GET', 'POST', 'DELETE'], '/salary-sheets/{id}/delete', [SalarySheetController::class, 'destroy']);
+    Route::get('/salary-sheets/{id}/download', [SalarySheetController::class, 'download']);
 
     // Financials
     Route::get('/collections/pending', [CollectionController::class, 'pendingCollections']);

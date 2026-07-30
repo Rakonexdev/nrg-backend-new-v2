@@ -126,6 +126,11 @@ class RoleController extends Controller
                 'description' => 'Control Employee List MOI CRUD & download operations',
                 'permissions' => []
             ],
+            'salary_sheet' => [
+                'label' => 'Salary Sheet',
+                'description' => 'Control Salary Sheet CRUD & download operations',
+                'permissions' => []
+            ],
         ];
 
         foreach ($permissions as $perm) {
@@ -174,6 +179,8 @@ class RoleController extends Controller
                 $grouped['sponsorship_changes']['permissions'][] = $perm;
             } elseif (str_starts_with($perm, 'employee_list_moi_')) {
                 $grouped['employee_list_moi']['permissions'][] = $perm;
+            } elseif (str_starts_with($perm, 'salary_sheet_')) {
+                $grouped['salary_sheet']['permissions'][] = $perm;
             }
         }
 
