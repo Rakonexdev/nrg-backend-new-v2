@@ -67,6 +67,7 @@ class AppServiceProvider extends ServiceProvider
                     'view_collectors', 'collector_create', 'collector_edit', 'collector_delete',
                     'view_role_access', 'view_reports', 'view_documentation',
                     'documentation_create', 'documentation_edit', 'documentation_delete', 'documentation_download',
+                    'view_employee_list_moi', 'employee_list_moi_create', 'employee_list_moi_edit', 'employee_list_moi_delete', 'employee_list_moi_download',
                 ];
                 foreach ($requiredPermissions as $pName) {
                     \Spatie\Permission\Models\Permission::firstOrCreate(

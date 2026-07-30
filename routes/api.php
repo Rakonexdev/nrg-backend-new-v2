@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\VisaApplicationController;
 use App\Http\Controllers\Api\BankDetailController;
 use App\Http\Controllers\Api\OfficialFormatController;
+use App\Http\Controllers\Api\EmployeeListMoiController;
 
 // Public Auth routes
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -119,6 +120,18 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         Route::match(['GET', 'POST', 'DELETE'], '/official-formats/{id}/delete', [OfficialFormatController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::get('/official-formats/{id}/download', [OfficialFormatController::class, 'download'])->middleware('can:documentation_download');
     });
+
+    // Employee List MOI
+    Route::get('/employee-list-moi', function(\Illuminate\Http\Request $request) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('employee_list_mois')) {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        }
+        return app(\App\Http\Controllers\Api\EmployeeListMoiController::class)->index($request);
+    });
+    Route::apiResource('employee-list-moi', EmployeeListMoiController::class)->except(['index']);
+    Route::match(['PUT', 'POST'], '/employee-list-moi/{id}', [EmployeeListMoiController::class, 'update']);
+    Route::match(['GET', 'POST', 'DELETE'], '/employee-list-moi/{id}/delete', [EmployeeListMoiController::class, 'destroy']);
+    Route::get('/employee-list-moi/{id}/download', [EmployeeListMoiController::class, 'download']);
 
     // Financials
     Route::get('/collections/pending', [CollectionController::class, 'pendingCollections']);
