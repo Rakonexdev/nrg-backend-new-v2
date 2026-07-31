@@ -555,6 +555,10 @@ class ContractController extends Controller implements HasMiddleware
     public function destroy($id)
     {
         $entity = Contract::findOrFail($id);
+        $entity->payments()->delete();
+        $entity->adjustments()->delete();
+        $entity->invoices()->delete();
+        \App\Models\Expense::where('contract_id', $id)->update(['contract_id' => null]);
         $entity->delete();
         return response()->json(['message' => 'Deleted']);
     }

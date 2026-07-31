@@ -90,6 +90,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::get('/contracts/summary', [ContractController::class, 'summary']);
     Route::apiResource('contracts', ContractController::class);
     Route::match(['PUT', 'POST'], '/contracts/{id}', [ContractController::class, 'update']);
+    Route::match(['GET', 'POST', 'DELETE'], '/contracts/{id}/delete', [ContractController::class, 'destroy']);
     Route::post('/contracts/{id}/adjustments', [ContractController::class, 'addAdjustment']);
     Route::match(['PUT', 'POST'], '/contracts/{id}/adjustments/{adjustment_id}', [ContractController::class, 'updateAdjustment']);
     Route::match(['PUT', 'POST'], '/contracts/{id}/next-due-date', [ContractController::class, 'updateNextDueDate']);
