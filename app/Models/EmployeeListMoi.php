@@ -18,6 +18,7 @@ class EmployeeListMoi extends Model
         'company_id',
         'upload_date',
         'salary_month',
+        'status',
         'file_path',
         'file_name',
         'file_type',

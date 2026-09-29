@@ -37,7 +37,8 @@ class EmployeeListMoiController extends Controller implements HasMiddleware
                     $q->where('document_name', 'like', "%{$search}%")
                       ->orWhere('computer_card_number', 'like', "%{$search}%")
                       ->orWhere('company_name', 'like', "%{$search}%")
-                      ->orWhere('salary_month', 'like', "%{$search}%");
+                      ->orWhere('salary_month', 'like', "%{$search}%")
+                      ->orWhere('status', 'like', "%{$search}%");
                 });
             }
 
@@ -53,6 +54,11 @@ class EmployeeListMoiController extends Controller implements HasMiddleware
             // Salary month filter
             if ($request->filled('salary_month')) {
                 $query->where('salary_month', $request->salary_month);
+            }
+
+            // Status filter
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
             }
 
             $perPage = $request->input('per_page', 15);
@@ -76,6 +82,7 @@ class EmployeeListMoiController extends Controller implements HasMiddleware
                 'company_id' => 'nullable|exists:companies,id',
                 'upload_date' => 'required|date',
                 'salary_month' => 'required|string|max:255',
+                'status' => 'nullable|string|max:255',
                 'file' => 'required|file|max:10240', // Max 10MB
             ]);
 
@@ -100,6 +107,7 @@ class EmployeeListMoiController extends Controller implements HasMiddleware
                 'company_id' => $request->company_id,
                 'upload_date' => $request->upload_date ?: now()->toDateString(),
                 'salary_month' => $request->salary_month,
+                'status' => $request->status ?: 'Pending',
                 'file_path' => $path,
                 'file_name' => $file->getClientOriginalName(),
                 'file_type' => $file->getClientMimeType(),
@@ -132,6 +140,7 @@ class EmployeeListMoiController extends Controller implements HasMiddleware
                 'company_id' => 'nullable|exists:companies,id',
                 'upload_date' => 'required|date',
                 'salary_month' => 'required|string|max:255',
+                'status' => 'nullable|string|max:255',
                 'file' => 'nullable|file|max:10240',
             ]);
 
@@ -152,6 +161,7 @@ class EmployeeListMoiController extends Controller implements HasMiddleware
                 'company_id' => $request->company_id,
                 'upload_date' => $request->upload_date ?: $record->upload_date,
                 'salary_month' => $request->salary_month,
+                'status' => $request->status ?: ($record->status ?: 'Pending'),
             ];
 
             if ($request->hasFile('file')) {
