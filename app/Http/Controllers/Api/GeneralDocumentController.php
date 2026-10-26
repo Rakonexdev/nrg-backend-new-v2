@@ -49,7 +49,7 @@ class GeneralDocumentController extends Controller implements HasMiddleware
             'document_name' => 'required|string|max:255',
             'category' => 'required|in:company,other',
             'expiry_date' => 'nullable|date',
-            'file' => 'required|file|max:10240', // Max 10MB
+            'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,csv,jpg,jpeg,png|max:10240', // Max 10MB
         ]);
 
         $file = $request->file('file');
@@ -84,11 +84,17 @@ class GeneralDocumentController extends Controller implements HasMiddleware
     public function update(Request $request, $id)
     {
         try {
-            $request->validate([
+            $rules = [
                 'document_name' => 'required|string|max:255',
                 'expiry_date' => 'nullable|date',
-                'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240'
-            ]);
+                'file' => 'nullable',
+            ];
+
+            if ($request->hasFile('file') || $request->file('file')) {
+                $rules['file'] = 'file|mimes:pdf,doc,docx,xls,xlsx,csv,jpg,jpeg,png|max:10240';
+            }
+
+            $request->validate($rules);
 
             $document = GeneralDocument::findOrFail($id);
             $data = [
@@ -98,7 +104,7 @@ class GeneralDocumentController extends Controller implements HasMiddleware
 
             if ($request->hasFile('file')) {
                 // Delete old file
-                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($document->file_path)) {
+                if (!empty($document->file_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists($document->file_path)) {
                     \Illuminate\Support\Facades\Storage::disk('public')->delete($document->file_path);
                 }
 

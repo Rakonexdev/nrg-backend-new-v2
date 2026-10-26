@@ -109,7 +109,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
     Route::middleware('can:view_documentation')->group(function () {
         Route::get('/general-documents', [GeneralDocumentController::class, 'index']);
         Route::post('/general-documents', [GeneralDocumentController::class, 'store'])->middleware('can:documentation_create');
-        Route::post('/general-documents/{id}', [GeneralDocumentController::class, 'update'])->middleware('can:documentation_edit');
+        Route::match(['PUT', 'POST'], '/general-documents/{id}', [GeneralDocumentController::class, 'update'])->middleware('can:documentation_edit');
         Route::delete('/general-documents/{id}', [GeneralDocumentController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::match(['GET', 'POST', 'DELETE'], '/general-documents/{id}/delete', [GeneralDocumentController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::get('/general-documents/{id}/download', [GeneralDocumentController::class, 'download'])->middleware('can:documentation_download');
@@ -117,7 +117,7 @@ Route::middleware(['auth:sanctum', 'check_login_time'])->group(function () {
         // Official Formats
         Route::get('/official-formats', [OfficialFormatController::class, 'index']);
         Route::post('/official-formats', [OfficialFormatController::class, 'store'])->middleware('can:documentation_create');
-        Route::post('/official-formats/{id}', [OfficialFormatController::class, 'update'])->middleware('can:documentation_edit');
+        Route::match(['PUT', 'POST'], '/official-formats/{id}', [OfficialFormatController::class, 'update'])->middleware('can:documentation_edit');
         Route::delete('/official-formats/{id}', [OfficialFormatController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::match(['GET', 'POST', 'DELETE'], '/official-formats/{id}/delete', [OfficialFormatController::class, 'destroy'])->middleware('can:documentation_delete');
         Route::get('/official-formats/{id}/download', [OfficialFormatController::class, 'download'])->middleware('can:documentation_download');

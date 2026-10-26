@@ -47,7 +47,7 @@ class OfficialFormatController extends Controller implements HasMiddleware
         $request->validate([
             'document_name' => 'required|string|max:255',
             'document_department' => 'required|string|max:255',
-            'file' => 'required|file|max:10240', // Max 10MB
+            'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,csv,jpg,jpeg,png|max:10240', // Max 10MB
         ]);
 
         $file = $request->file('file');
@@ -119,11 +119,17 @@ class OfficialFormatController extends Controller implements HasMiddleware
     public function update(Request $request, $id)
     {
         try {
-            $request->validate([
+            $rules = [
                 'document_name' => 'required|string|max:255',
                 'document_department' => 'required|string|max:255',
-                'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240'
-            ]);
+                'file' => 'nullable',
+            ];
+
+            if ($request->hasFile('file') || $request->file('file')) {
+                $rules['file'] = 'file|mimes:pdf,doc,docx,xls,xlsx,csv,jpg,jpeg,png|max:10240';
+            }
+
+            $request->validate($rules);
 
             $document = OfficialFormat::findOrFail($id);
             $data = [
@@ -132,7 +138,7 @@ class OfficialFormatController extends Controller implements HasMiddleware
             ];
 
             if ($request->hasFile('file')) {
-                if (Storage::disk('public')->exists($document->file_path)) {
+                if (!empty($document->file_path) && Storage::disk('public')->exists($document->file_path)) {
                     Storage::disk('public')->delete($document->file_path);
                 }
 
