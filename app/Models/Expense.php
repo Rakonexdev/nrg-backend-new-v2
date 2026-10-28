@@ -25,8 +25,8 @@ class Expense extends Model
     ];
 
     protected $casts = [
-        'expense_date' => 'date',
-        'validation_date' => 'date',
+        'expense_date' => 'date:Y-m-d',
+        'validation_date' => 'date:Y-m-d',
         'is_recoverable' => 'boolean',
     ];
 
